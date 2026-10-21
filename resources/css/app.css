@@ -4,5 +4,179 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --color-adara-background: #F8F5F2;
+    --color-adara-surface: #FFFEFD;
+    --color-adara-ink: #302936;
+    --color-adara-muted: #8D818D;
+    --color-adara-readable-muted: color-mix(in srgb, var(--color-adara-muted) 75%, var(--color-adara-ink));
+    --color-adara-border: #EBE3E5;
+    --color-adara-sidebar: #312631;
+    --color-adara-primary: #8B4969;
+    --color-adara-primary-hover: #793B5A;
+    --color-adara-primary-light: #F7EAF0;
+    --color-adara-success: #24785D;
+    --color-adara-success-bg: #E7F5EE;
+    --color-adara-warning: #A66F1D;
+    --color-adara-warning-bg: #FFF3DA;
+    --color-adara-danger: #A94555;
+    --color-adara-danger-bg: #FBEAED;
+    --font-sans: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-display: Georgia, 'Times New Roman', serif;
+    --radius-adara-control: 10px;
+    --radius-adara-card: 18px;
+    --radius-adara-dialog: 20px;
+    --shadow-adara-panel: 0 12px 45px rgb(59 36 55 / 4.5%);
+}
+
+:root {
+    --adara-background: var(--color-adara-background);
+    --adara-surface: var(--color-adara-surface);
+    --adara-ink: var(--color-adara-ink);
+    --adara-muted: var(--color-adara-muted);
+    --adara-border: var(--color-adara-border);
+    --adara-sidebar: var(--color-adara-sidebar);
+    --adara-primary: var(--color-adara-primary);
+    --adara-primary-hover: var(--color-adara-primary-hover);
+    --adara-primary-light: var(--color-adara-primary-light);
+    --adara-success: var(--color-adara-success);
+    --adara-success-bg: var(--color-adara-success-bg);
+    --adara-warning: var(--color-adara-warning);
+    --adara-warning-bg: var(--color-adara-warning-bg);
+    --adara-danger: var(--color-adara-danger);
+    --adara-danger-bg: var(--color-adara-danger-bg);
+    --adara-spacing-base: 8px;
+    --adara-radius-control: var(--radius-adara-control);
+    --adara-radius-card: var(--radius-adara-card);
+    --adara-radius-dialog: var(--radius-adara-dialog);
+}
+
+@layer base {
+    [x-cloak] {
+        display: none !important;
+    }
+
+    html {
+        color-scheme: light;
+    }
+
+    body {
+        min-width: 320px;
+    }
+
+    :where(a, button, summary, input, select, textarea):focus-visible {
+        outline: 3px solid var(--adara-primary);
+        outline-offset: 3px;
+    }
+
+    .adara-sidebar-nav {
+        scrollbar-color: rgb(255 255 255 / 25%) transparent;
+        scrollbar-width: thin;
+    }
+
+    [data-adara-select-native][data-adara-enhanced='true'] {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        overflow: hidden !important;
+        clip-path: inset(50%) !important;
+        white-space: nowrap !important;
+        pointer-events: none;
+    }
+
+    [data-adara-select-root][data-adara-open='true'] {
+        z-index: 50;
+    }
+
+    .adara-select-option {
+        display: flex;
+        min-height: 40px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-radius: 8px;
+        padding: 8px 12px;
+        color: var(--adara-ink);
+        cursor: pointer;
+    }
+
+    .adara-select-option:hover,
+    .adara-select-option:focus-visible,
+    .adara-select-option[aria-selected='true'] {
+        background: var(--adara-primary-light);
+        color: var(--adara-primary);
+    }
+
+    .adara-select-option:focus-visible {
+        outline: 2px solid var(--adara-primary);
+        outline-offset: -2px;
+    }
+
+    .adara-select-option[aria-selected='true']::after {
+        content: '';
+        width: 7px;
+        height: 12px;
+        margin-right: 3px;
+        border-right: 2px solid currentColor;
+        border-bottom: 2px solid currentColor;
+        transform: rotate(45deg);
+    }
+
+    .adara-select-option[aria-disabled='true'] {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    [data-adara-select-trigger][aria-expanded='true'] [data-adara-select-chevron] {
+        transform: rotate(180deg);
+    }
+
+    .adara-skeleton-line {
+        position: relative;
+        overflow: hidden;
+        background: var(--adara-border);
+    }
+
+    .adara-skeleton-line::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--adara-surface) 65%, transparent), transparent);
+        transform: translateX(-100%);
+        animation: adara-skeleton-sweep 2.8s ease-in-out infinite;
+    }
+
+    .adara-loading-indicator {
+        animation: adara-loading-glow 2.4s ease-in-out infinite;
+    }
+}
+
+@keyframes adara-skeleton-sweep {
+    0% { transform: translateX(-100%); }
+    60%, 100% { transform: translateX(100%); }
+}
+
+@keyframes adara-loading-glow {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .adara-skeleton-line::after {
+        display: none;
+    }
+
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .adara-loading-indicator {
+        animation-duration: 2.4s !important;
+    }
 }

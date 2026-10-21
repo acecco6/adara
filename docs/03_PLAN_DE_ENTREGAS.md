@@ -22,7 +22,7 @@ No confundir «servidor responde» con «sistema terminado».
 | 2 — Catálogo e inventario | T07–T11 | fase 1 | catálogo/producto/categorías/stock | tablas + acciones + movimientos | alta/edición/consulta con tests |
 | 3 — Proveedores y compras | T12–T15 | fase 2 | pedido/recepción/detalle | flete + valoración + transacciones | compra completa, luego parcial |
 | 4 — Ventas | T16–T20 | fase 3 | nueva venta, historial, modal confirmación | stock debitado, snapshots, anulaciones | venta E2E + transacciones + tests |
-| 5 — Datos y reportes | T21–T24 | fase 4 | importador, dashboard, reportes, ajustes | import/export, reporting | métricas consistentes y exportables |
+| 5 — Datos y reportes | T21–T24 | fase 4 | dashboard, reportes, ajustes; T21 sujeto a nueva necesidad | exportación y reporting | métricas consistentes y exportables |
 | 6 — Respaldos / Mac | T25–T29 | fases anteriores | backups, ayuda, pulido | snapshot, restauración, release | app usable en Mac offline, backup recuperable |
 
 **Dependencia crítica:** no implementar «Ganancia histórica» en reportes sin primero guardar `sale_items.cost_total_snapshot_cents`. No implementar «Recepción» sin prorrateo en centavos resuelto.
@@ -33,13 +33,13 @@ No confundir «servidor responde» con «sistema terminado».
 
 - [ ] **T00 — Auditar repositorio**: listar versiones/requisitos, qué hay implementado, `.env.example`, rutas, migraciones, tests, archivos de diseño disponibles. No borrar nada. **Aceptación:** informe con comandos, hallazgos y riesgos.
 - [ ] **T01 — Contrato visual**: revisar `design_tokens.json`, HTML y SVG, registrar tabla componentes/rutas, diferencias Windows→Mac y Aura→Adara. **Aceptación:** documento de mapping comprobable.
-- [ ] **T02 — Decisiones de dominio/ERD**: confirmar promedio ponderado, recargo, redondeo, descuentos, parcialidad de recepción y anulación. **Aceptación:** decisiones registradas y esquema aceptado antes de migrar.
+- [ ] **T02 — Decisiones de dominio/ERD**: aplicar último costo de reposición R01 (no promedio ponderado), registrar reglas de recargo, redondeo, descuentos, parcialidad de recepción y anulación, y resolver los pendientes antes de cada módulo afectado. **Aceptación:** esquema de SKU y stock aceptado antes de migrar; reglas económicas restantes trazadas a sus tickets.
 
 ### Fase 1 — Frontend base
 
-- [ ] **T03 — Tokens y layout**: variables CSS, header, sidebar, logo ADARA, responsive notebook, fuentes offline. **Aceptación:** screenshots 1366×768 y 1440×900; sin recursos online.
-- [ ] **T04 — Componentes básicos**: botones, inputs/textarea/moneda, selects, badges, alertas, loading/empty. **Aceptación:** galería de estados/validaciones accesibles.
-- [ ] **T05 — Modales y navegación**: modal genérico, confirm dialog, toast, rutas, `wire:navigate`. **Aceptación:** keyboard/focus, overlay, navegación sin listeners duplicados.
+- [x] **T03 — Tokens y layout**: variables CSS, header, sidebar, logo ADARA, responsive notebook, fuentes offline. **Aceptación:** capturas verificadas a 1366×768 y 1440×900, guardadas fuera del repositorio; recursos de producción empaquetados localmente. Los elementos de navegación aún sin ruta se muestran inactivos hasta sus tickets.
+- [x] **T04 — Componentes básicos**: botones, inputs/textarea/moneda, selector con lista estilizada, badges, alertas y estados loading/empty como componentes Blade. **Aceptación:** galería de estados/validaciones accesibles en `/dev/componentes` solo para entorno local y pruebas; ruta ausente en producción. El selector conserva un `<select>` real para enviar el valor y como alternativa si JavaScript no carga; la lista visual flota sobre el formulario sin desplazar el contenido. El campo ARS presenta el símbolo y el teclado decimal, sin convertir ni calcular importes en el navegador.
+- [x] **T05 — Modales y navegación**: modal genérico, confirm dialog, toast y `wire:navigate` en las rutas existentes. **Aceptación:** galería local con apertura/cierre, foco y teclado; avisos de éxito/error; navegación Inicio ↔ Componentes sin listeners duplicados. Las rutas de pantallas comerciales pertenecen a T06.
 - [ ] **T06 — Shell de 17 pantallas**: páginas con estructura, títulos y enlaces, sin datos ficticios en release. **Aceptación:** todos los enlaces correctos, estados vacíos y URL directa navegable.
 
 ### Fase 2 — Catálogo y stock
@@ -47,7 +47,7 @@ No confundir «servidor responde» con «sistema terminado».
 - [ ] **T07 — Migraciones catálogo**: categorías, proveedores, clientes, productos, balance y movimientos + factories. **Aceptación:** migrar/test con SQLite aislada.
 - [ ] **T08 — CRUD catálogo**: alta/edición/archivado, SKU único, detalle, filtros. **Aceptación:** UI funcional + tests de validación e historia.
 - [ ] **T09 — Categorías/proveedores/clientes**: formularios simples + relación con productos. **Aceptación:** selección en modales CRUD, sin inconsistencias FK.
-- [ ] **T10 — Inventario inicial/ajustes**: Action y movimiento auditado; umbral stock. **Aceptación:** no hay edición directa de saldo sin movimiento.
+- [ ] **T10 — Inventario inicial/ajustes**: cargar manualmente unidades físicas existentes con cantidad y costo real por presentación mediante evento inicial auditable; ajustes motivados y umbral de stock. **Aceptación:** no hay edición directa de saldo sin movimiento ni primer costo/precio inventado.
 - [ ] **T11 — Stock UI**: saldo, filtros, historial, modal ajuste. **Aceptación:** un ajuste cambia el saldo exactamente 1 vez.
 
 ### Fase 3 — Compras
@@ -67,7 +67,7 @@ No confundir «servidor responde» con «sistema terminado».
 
 ### Fase 5 — Datos, dashboard, configuración
 
-- [ ] **T21 — Importador**: auditoría Excel, preview, mapping, validaciones, deduplicación y registro de batch. **Aceptación:** datos demo no se importan silenciosamente.
+- [ ] **T21 — Importación diferida**: el 21/10/2026 se decidió cargar catálogo y stock inicial manualmente desde cero, sin importar Excel. No implementar importador para el inicio; reabrir este ticket solo ante pedido posterior con fuente, validaciones y criterio de deduplicación definidos.
 - [ ] **T22 — Reportes económicos**: backend de KPI y rangos, anulaciones, export CSV seguro. **Aceptación:** cifras reconciliadas con ventas y costos.
 - [ ] **T23 — Dashboard y gráficos**: Chart.js local, indicadores, alertas, reportes, filtros. **Aceptación:** sin ventas ≠ números inventados.
 - [ ] **T24 — Configuración**: preferencias validadas, ayudas y sugerencias de precio. **Aceptación:** configuración no altera historia ni ventas ya registradas.

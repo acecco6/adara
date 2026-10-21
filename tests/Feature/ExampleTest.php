@@ -9,10 +9,17 @@ class ExampleTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_returns_a_successful_response(): void
+    public function test_home_page_shows_adara_shell_without_unavailable_navigation_links(): void
     {
+        $this->withoutVite();
+
         $response = $this->get('/');
 
-        $response->assertOk();
+        $response->assertOk()
+            ->assertSee('Bienvenida a Adara')
+            ->assertSee('Navegación principal')
+            ->assertSee('Productos y presentaciones')
+            ->assertSee('aria-disabled="true"', false)
+            ->assertDontSee('Laravel');
     }
 }

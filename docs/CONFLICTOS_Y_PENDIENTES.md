@@ -20,7 +20,11 @@ Fecha: 21/10/2026. Fuente normativa: [REGLAS_ECONOMICAS_ADARA.md](REGLAS_ECONOMI
 
 ## Criterio R31 ya confirmado
 
-El 21/10/2026 el usuario eligió **«Última unidad según orden estable (coincide con el ejemplo)»** para asignar centavos sobrantes. Para formular el algoritmo, conservar el orden persistido de las líneas/unidades de la operación y asignar los centavos residuales a las últimas posiciones elegibles de ese orden; un empate no depende del orden de una consulta SQL. El caso de aceptación es ARS 1.000 entre tres unidades: 333,33 + 333,33 + 333,34. Las cuotas base y los restos se calculan con enteros/decimales exactos y la suma debe coincidir al centavo. Documentar y probar antes de usar el mismo criterio en flete, descuento general y otros repartos; la distribución por costo debe seguir respetando los pesos elegidos en R02.
+El 21/10/2026 el usuario eligió **«Última unidad según orden estable (coincide con el ejemplo)»** para asignar centavos sobrantes. Para formular el algoritmo, conservar el orden persistido de las líneas/unidades de la operación y asignar todo el remanente a la última posición elegible de ese orden; un empate no depende del orden de una consulta SQL. El caso de aceptación es ARS 1.000 entre tres unidades: 333,33 + 333,33 + 333,34. I01a ya implementa y prueba el reparto puro con enteros y suma exacta, incluido el caso de dos centavos residuales. Antes de integrarlo con flete, descuento general y otros repartos, cada operación deberá persistir y pasar su orden estable; la distribución por costo debe respetar los pesos elegidos en R02.
+
+## Carga inicial confirmada
+
+El 21/10/2026 el usuario indicó que cargará catálogo y stock **manualmente desde cero** y que no hace falta importar Excel. También confirmó que incorporará unidades físicas existentes indicando cantidad y costo real por presentación. T21 queda diferido. Cada SKU se crea con saldo cero; la incorporación real requiere un evento inicial auditable con ese costo, sin importar registros ni presuponer saldos monetarios. El formulario y el primer precio calculado dependen del ticket de catálogo/recargos e inventario inicial.
 
 ## Pendientes que sí pueden cambiar resultados
 
