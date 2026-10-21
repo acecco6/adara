@@ -15,7 +15,6 @@ class ShellNavigationTest extends TestCase
         $this->withoutVite();
 
         $pages = [
-            ['inventory.index', [], 'Stock y movimientos'],
             ['purchases.index', [], 'Pedidos a proveedor'],
             ['purchases.show', ['order' => 1], 'Detalle del pedido'],
             ['purchases.receipts', [], 'Recepción de compras'],
@@ -39,6 +38,7 @@ class ShellNavigationTest extends TestCase
 
         $this->get(route('products.index'))->assertOk()->assertSee('<title>Productos · Adara Gestión</title>', false);
         $this->get(route('products.show', $product))->assertOk()->assertSee('<title>Detalle del producto · Adara Gestión</title>', false);
+        $this->get(route('inventory.index'))->assertOk()->assertSee('Existencias por presentación')->assertDontSee('En preparación');
         $this->get(route('categories.index'))->assertOk()->assertSee('Nueva categoría')->assertDontSee('En preparación');
         $this->get(route('suppliers.index'))->assertOk()->assertSee('Nuevo proveedor')->assertDontSee('En preparación');
         $this->get(route('customers.index'))->assertOk()->assertSee('Nueva clienta')->assertDontSee('En preparación');

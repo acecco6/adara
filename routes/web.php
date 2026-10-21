@@ -10,14 +10,7 @@ Route::view('/productos', 'products.index')->name('products.index');
 Route::get('/productos/{product}', [ProductController::class, 'show'])
     ->whereNumber('product')->name('products.show');
 
-Route::view('/stock', 'section', [
-    'title' => 'Stock y movimientos',
-    'section' => 'General',
-    'summary' => 'Acá vas a consultar cantidades disponibles y movimientos registrados.',
-    'pageKind' => 'list',
-    'columns' => ['Producto', 'Presentación', 'Disponible', 'Último movimiento'],
-    'actionLabel' => 'Ajustar stock',
-])->name('inventory.index');
+Route::view('/stock', 'inventory')->name('inventory.index');
 
 Route::view('/pedidos', 'section', [
     'title' => 'Pedidos a proveedor',

@@ -62,7 +62,7 @@
         </section>
         <section class="rounded-adara-card border border-adara-border bg-adara-surface p-5 shadow-adara-panel sm:p-6" aria-labelledby="new-variant-title">
             <h2 id="new-variant-title" class="font-display text-xl font-semibold">Agregar presentación</h2>
-            <p class="mt-2 text-sm text-adara-readable-muted">Comienza con stock cero. El costo y precio se definirán al cargar existencias o recibir compras.</p>
+            <p class="mt-2 text-sm text-adara-readable-muted">Comienza con stock cero. Cargá el costo real inicial por presentación; el precio se definirá cuando haya un recargo configurado.</p>
             <form wire:submit="addVariant" class="mt-5 flex flex-col gap-5">
                 <x-adara.input id="new-presentation" name="presentation" label="Presentación" hint="Por ejemplo, 100 ml o unidad." wire:model="presentation" required />
                 <x-adara.input id="new-sku" name="sku" label="Código SKU" hint="Opcional: se genera automáticamente." wire:model="sku" />
@@ -79,14 +79,25 @@
                     <div class="flex flex-wrap justify-between gap-3">
                         <div>
                             <h3 class="font-semibold">{{ $variant->name }}</h3>
-                            <p class="mt-1 text-sm text-adara-readable-muted">Código {{ $variant->sku }} · Stock {{ $variant->balance?->quantity_on_hand ?? 0 }}</p>
-                            <p class="mt-1 text-xs text-adara-readable-muted">Precio: {{ $variant->current_price_cents === null ? 'Pendiente de costo real' : '$ '.str_replace('.', ',', \App\Services\Pricing\Money::fromCents($variant->current_price_cents)->toDecimal()) }}</p>
+                            <p class="mt-1 text-sm text-adara-readable-muted">Código {{ $variant->sku }} · Stock {{ $variant->balance?->quantity_on_hand ?? 0 }} · Mínimo {{ $variant->minimum_stock }}</p>
+                            <p class="mt-1 text-xs text-adara-readable-muted">Costo vigente: {{ $variant->current_unit_cost_10000 === null ? 'Pendiente' : '$ '.str_replace('.', ',', \App\Services\Pricing\UnitCost::fromTenThousandths($variant->current_unit_cost_10000)->toDecimal()) }}</p>
+                            <p class="mt-1 text-xs text-adara-readable-muted">Precio: {{ $variant->current_price_cents === null ? ($variant->current_unit_cost_10000 === null ? 'Pendiente de costo real' : 'Pendiente de definir recargo') : '$ '.str_replace('.', ',', \App\Services\Pricing\Money::fromCents($variant->current_price_cents)->toDecimal()) }}</p>
                         </div>
-                        <x-adara.badge :tone="$variant->is_active ? 'success' : 'neutral'">{{ $variant->is_active ? 'Activo' : 'Archivado' }}</x-adara.badge>
+                        <div class="flex flex-wrap items-start gap-2">
+                            @if ($variant->is_active && ($variant->balance?->quantity_on_hand ?? 0) <= $variant->minimum_stock)
+                                <x-adara.badge tone="warning">En mínimo o debajo</x-adara.badge>
+                            @endif
+                            <x-adara.badge :tone="$variant->is_active ? 'success' : 'neutral'">{{ $variant->is_active ? 'Activo' : 'Archivado' }}</x-adara.badge>
+                        </div>
                     </div>
                     <div class="mt-4 flex flex-wrap gap-2">
                         <x-adara.button variant="outline" wire:click="startEditing({{ $variant->id }})">Editar</x-adara.button>
                         @if ($variant->is_active)
+                            @if (($variant->balance?->quantity_on_hand ?? 0) === 0 && $variant->current_unit_cost_10000 === null && $variant->current_price_cents === null && ! $movementVariantIds->has($variant->id))
+                                <x-adara.button variant="secondary" wire:click="openInitialStock({{ $variant->id }})">Cargar stock inicial</x-adara.button>
+                            @endif
+                            <x-adara.button variant="outline" wire:click="openAdjustment({{ $variant->id }})">Ajustar stock</x-adara.button>
+                            <x-adara.button variant="outline" wire:click="openMinimum({{ $variant->id }})">Configurar mínimo</x-adara.button>
                             <x-adara.button variant="outline" wire:click="confirm('archive', {{ $variant->id }})">Archivar</x-adara.button>
                         @else
                             <x-adara.button variant="secondary" wire:click="reactivate({{ $variant->id }})">Reactivar</x-adara.button>
@@ -119,11 +130,51 @@
             <ul class="mt-4 divide-y divide-adara-border">
                 @foreach ($movements as $movement)
                     <li wire:key="movement-{{ $movement->id }}" class="flex flex-wrap justify-between gap-2 py-3 text-sm">
-                        <span>{{ $movement->presentation }} · {{ $movement->reason ?: 'Movimiento de stock' }} · {{ \Illuminate\Support\Carbon::parse($movement->occurred_at)->timezone('America/Argentina/Buenos_Aires')->format('d/m/Y H:i') }}</span>
+                        <span>{{ $movement->presentation }} · {{ $movement->reason ?: 'Movimiento de stock' }} · {{ \Illuminate\Support\Carbon::parse($movement->occurred_at)->timezone('America/Argentina/Buenos_Aires')->format('d/m/Y H:i') }}@if ($movement->kind === 'initial_stock' && $movement->unit_cost_10000 !== null) · costo unitario $ {{ str_replace('.', ',', \App\Services\Pricing\UnitCost::fromTenThousandths((int) $movement->unit_cost_10000)->toDecimal()) }}@endif</span>
                         <span class="font-semibold">{{ $movement->quantity_delta > 0 ? '+' : '' }}{{ $movement->quantity_delta }} · saldo {{ $movement->quantity_after }}</span>
                     </li>
                 @endforeach
             </ul>
         @endif
     </section>
+
+    <x-adara.modal id="initial-stock-form" title="Cargar stock inicial" description="Registrá las existencias que ya tenés y su costo real por unidad. Esta carga se hace una sola vez por presentación." wire:ignore.self>
+        <form id="initial-stock-fields" wire:submit="saveInitialStock" class="grid gap-4">
+            <x-adara.input id="initial-quantity" name="initialQuantity" label="Cantidad disponible" type="number" min="1" step="1" inputmode="numeric" wire:model="initialQuantity" required />
+            <x-adara.currency-input id="initial-cost" name="initialCost" label="Costo real unitario en ARS" hint="Sin separador de miles; hasta cuatro decimales, por ejemplo 1234,5678." wire:model="initialCost" required />
+            <p class="text-sm text-adara-readable-muted">El precio de venta quedará pendiente hasta configurar el recargo.</p>
+            @error('initialStock') <p role="alert" class="text-sm text-adara-danger">{{ $message }}</p> @enderror
+        </form>
+        <x-slot:footer>
+            <x-adara.button variant="ghost" x-on:click="close()">Cancelar</x-adara.button>
+            <x-adara.button type="submit" form="initial-stock-fields" wire:loading.attr="disabled" wire:target="saveInitialStock">Registrar stock</x-adara.button>
+        </x-slot:footer>
+    </x-adara.modal>
+
+    <x-adara.modal id="stock-adjustment-form" title="Ajustar stock" description="Cada entrada o salida queda registrada con un motivo." wire:ignore.self>
+        <form id="stock-adjustment-fields" wire:submit="saveAdjustment" class="grid gap-4">
+            <x-adara.select id="adjustment-direction" name="adjustmentDirection" label="Tipo de ajuste" wire:model="adjustmentDirection" required>
+                <option value="in">Entrada</option>
+                <option value="out">Salida</option>
+            </x-adara.select>
+            <x-adara.input id="adjustment-quantity" name="adjustmentQuantity" label="Cantidad" type="number" min="1" step="1" inputmode="numeric" wire:model="adjustmentQuantity" required />
+            <x-adara.textarea id="adjustment-reason" name="adjustmentReason" label="Motivo" wire:model="adjustmentReason" required />
+            @error('stockAdjustment') <p role="alert" class="text-sm text-adara-danger">{{ $message }}</p> @enderror
+        </form>
+        <x-slot:footer>
+            <x-adara.button variant="ghost" x-on:click="close()">Cancelar</x-adara.button>
+            <x-adara.button type="submit" form="stock-adjustment-fields" wire:loading.attr="disabled" wire:target="saveAdjustment">Guardar ajuste</x-adara.button>
+        </x-slot:footer>
+    </x-adara.modal>
+
+    <x-adara.modal id="stock-minimum-form" title="Configurar mínimo" description="Se mostrará un aviso cuando el saldo sea igual o menor a este número." wire:ignore.self>
+        <form id="stock-minimum-fields" wire:submit="saveMinimum" class="grid gap-4">
+            <x-adara.input id="minimum-quantity" name="minimumQuantity" label="Stock mínimo" type="number" min="0" step="1" inputmode="numeric" wire:model="minimumQuantity" required />
+            @error('stockMinimum') <p role="alert" class="text-sm text-adara-danger">{{ $message }}</p> @enderror
+        </form>
+        <x-slot:footer>
+            <x-adara.button variant="ghost" x-on:click="close()">Cancelar</x-adara.button>
+            <x-adara.button type="submit" form="stock-minimum-fields" wire:loading.attr="disabled" wire:target="saveMinimum">Guardar mínimo</x-adara.button>
+        </x-slot:footer>
+    </x-adara.modal>
 </div>
