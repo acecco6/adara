@@ -1,4 +1,4 @@
-@props(['id', 'title', 'description' => null, 'dismissible' => true])
+@props(['id', 'title', 'description' => null, 'dismissible' => true, 'wide' => false])
 
 <div
     x-data="{
@@ -32,6 +32,7 @@
         }
     }"
     x-on:adara:open.window="if ($event.detail.id === '{{ $id }}') open()"
+    x-on:adara:close.window="if ($event.detail.id === '{{ $id }}') close()"
     x-on:livewire:navigating.window="close()"
 >
     <dialog
@@ -43,7 +44,7 @@
         aria-modal="true"
         aria-labelledby="{{ $id }}-title"
         @if ($description) aria-describedby="{{ $id }}-description" @endif
-        {{ $attributes->class(['m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-[34rem] overflow-y-auto rounded-adara-dialog border border-adara-border bg-adara-surface p-0 text-adara-ink shadow-xl backdrop:bg-adara-sidebar/60']) }}
+        {{ $attributes->class(['m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto rounded-adara-dialog border border-adara-border bg-adara-surface p-0 text-adara-ink shadow-xl backdrop:bg-adara-sidebar/60', 'max-w-[44rem]' => $wide, 'max-w-[34rem]' => ! $wide]) }}
     >
         <div class="flex items-start justify-between gap-4 border-b border-adara-border px-6 py-5">
             <div>

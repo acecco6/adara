@@ -1,26 +1,14 @@
 <?php
 
+use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
 
-Route::view('/productos', 'section', [
-    'title' => 'Productos',
-    'section' => 'General',
-    'summary' => 'Acá vas a consultar y organizar tus productos y presentaciones.',
-    'pageKind' => 'list',
-    'columns' => ['Producto', 'Código', 'Categoría', 'Precio', 'Stock'],
-    'actionLabel' => 'Agregar producto',
-])->name('products.index');
+Route::view('/productos', 'products.index')->name('products.index');
 
-Route::view('/productos/{product}', 'section', [
-    'title' => 'Detalle del producto',
-    'section' => 'Productos',
-    'summary' => 'La ficha individual reunirá las presentaciones y su historial.',
-    'pageKind' => 'detail',
-    'backRoute' => 'products.index',
-    'backLabel' => 'Volver a productos',
-])->whereNumber('product')->name('products.show');
+Route::get('/productos/{product}', [ProductController::class, 'show'])
+    ->whereNumber('product')->name('products.show');
 
 Route::view('/stock', 'section', [
     'title' => 'Stock y movimientos',
@@ -75,32 +63,9 @@ Route::view('/ventas', 'section', [
     'actionLabel' => 'Nueva venta',
 ])->name('sales.index');
 
-Route::view('/clientes', 'section', [
-    'title' => 'Clientas',
-    'section' => 'Administración',
-    'summary' => 'Acá vas a consultar y organizar los datos de tus clientas.',
-    'pageKind' => 'list',
-    'columns' => ['Clienta', 'Contacto', 'Actividad'],
-    'actionLabel' => 'Nueva clienta',
-])->name('customers.index');
-
-Route::view('/proveedores', 'section', [
-    'title' => 'Proveedores',
-    'section' => 'Administración',
-    'summary' => 'Acá vas a consultar y organizar los datos de tus proveedores.',
-    'pageKind' => 'list',
-    'columns' => ['Proveedor', 'Contacto', 'Última compra'],
-    'actionLabel' => 'Nuevo proveedor',
-])->name('suppliers.index');
-
-Route::view('/categorias', 'section', [
-    'title' => 'Categorías',
-    'section' => 'Administración',
-    'summary' => 'Acá vas a organizar las categorías de tus productos.',
-    'pageKind' => 'list',
-    'columns' => ['Categoría', 'Productos'],
-    'actionLabel' => 'Nueva categoría',
-])->name('categories.index');
+Route::view('/clientes', 'contacts', ['kind' => 'customer'])->name('customers.index');
+Route::view('/proveedores', 'contacts', ['kind' => 'supplier'])->name('suppliers.index');
+Route::view('/categorias', 'categories')->name('categories.index');
 
 Route::view('/reportes', 'section', [
     'title' => 'Reportes',

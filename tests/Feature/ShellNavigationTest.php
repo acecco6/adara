@@ -2,26 +2,25 @@
 
 namespace Tests\Feature;
 
+use App\Models\ProductGroup;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ShellNavigationTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_each_planned_section_opens_a_named_page_with_an_honest_placeholder(): void
     {
         $this->withoutVite();
 
         $pages = [
-            ['products.index', [], 'Productos'],
-            ['products.show', ['product' => 1], 'Detalle del producto'],
             ['inventory.index', [], 'Stock y movimientos'],
             ['purchases.index', [], 'Pedidos a proveedor'],
             ['purchases.show', ['order' => 1], 'Detalle del pedido'],
             ['purchases.receipts', [], 'Recepción de compras'],
             ['sales.index', [], 'Ventas'],
             ['sales.create', [], 'Nueva venta'],
-            ['customers.index', [], 'Clientas'],
-            ['suppliers.index', [], 'Proveedores'],
-            ['categories.index', [], 'Categorías'],
             ['reports.index', [], 'Reportes'],
             ['settings.index', [], 'Configuración'],
             ['backups.index', [], 'Copias de seguridad'],
@@ -35,6 +34,14 @@ class ShellNavigationTest extends TestCase
                 ->assertSee('En preparación')
                 ->assertSee('Volver');
         }
+
+        $product = ProductGroup::factory()->create();
+
+        $this->get(route('products.index'))->assertOk()->assertSee('<title>Productos · Adara Gestión</title>', false);
+        $this->get(route('products.show', $product))->assertOk()->assertSee('<title>Detalle del producto · Adara Gestión</title>', false);
+        $this->get(route('categories.index'))->assertOk()->assertSee('Nueva categoría')->assertDontSee('En preparación');
+        $this->get(route('suppliers.index'))->assertOk()->assertSee('Nuevo proveedor')->assertDontSee('En preparación');
+        $this->get(route('customers.index'))->assertOk()->assertSee('Nueva clienta')->assertDontSee('En preparación');
     }
 
     public function test_list_and_detail_shells_explain_their_unavailable_content(): void
@@ -43,13 +50,14 @@ class ShellNavigationTest extends TestCase
 
         $this->get(route('products.index'))
             ->assertOk()
-            ->assertSee('Listado en preparación')
-            ->assertSee('Todavía no muestra datos ni permite registrar operaciones.')
-            ->assertSee('Disponible próximamente');
+            ->assertSee('No hay productos para mostrar')
+            ->assertSee('Agregar producto');
 
-        $this->get(route('products.show', ['product' => 1]))
+        $product = ProductGroup::factory()->create();
+
+        $this->get(route('products.show', $product))
             ->assertOk()
-            ->assertSee('No se muestran datos de ningún registro.')
+            ->assertSee('Últimos movimientos')
             ->assertSee('Volver a productos');
     }
 
@@ -74,6 +82,7 @@ class ShellNavigationTest extends TestCase
 
         $this->get('/no-existe')->assertNotFound();
         $this->get('/productos/desconocido')->assertNotFound();
+        $this->get('/productos/999999')->assertNotFound();
         $this->get('/pedidos/desconocido')->assertNotFound();
     }
 }
