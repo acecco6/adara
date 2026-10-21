@@ -33,17 +33,23 @@
                 <p class="text-[11px] font-extrabold uppercase tracking-[0.13em] text-adara-primary">Próximas secciones</p>
                 <h2 id="proximas-secciones-titulo" class="mt-2 font-display text-xl font-semibold text-adara-ink">Todo en un mismo lugar</h2>
                 <ul class="mt-6 flex flex-col gap-4 text-sm">
-                    <li class="flex items-center gap-3 border-b border-adara-border pb-4">
+                    <li class="border-b border-adara-border pb-4">
+                        <a href="{{ route('products.index') }}" wire:navigate class="flex min-h-10 items-center gap-3 rounded-adara-control hover:text-adara-primary">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-adara-control bg-adara-primary-light text-adara-primary"><i data-lucide="package" class="h-[18px] w-[18px]"></i></span>
                         <span>Productos y presentaciones</span>
+                        </a>
                     </li>
-                    <li class="flex items-center gap-3 border-b border-adara-border pb-4">
+                    <li class="border-b border-adara-border pb-4">
+                        <a href="{{ route('inventory.index') }}" wire:navigate class="flex min-h-10 items-center gap-3 rounded-adara-control hover:text-adara-primary">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-adara-control bg-adara-warning-bg text-adara-warning"><i data-lucide="boxes" class="h-[18px] w-[18px]"></i></span>
                         <span>Stock y movimientos</span>
+                        </a>
                     </li>
-                    <li class="flex items-center gap-3">
+                    <li>
+                        <a href="{{ route('sales.index') }}" wire:navigate class="flex min-h-10 items-center gap-3 rounded-adara-control hover:text-adara-primary">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-adara-control bg-adara-success-bg text-adara-success"><i data-lucide="shopping-cart" class="h-[18px] w-[18px]"></i></span>
                         <span>Ventas y cobros</span>
+                        </a>
                     </li>
                 </ul>
             </aside>
