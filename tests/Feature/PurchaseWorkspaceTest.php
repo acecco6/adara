@@ -47,6 +47,18 @@ class PurchaseWorkspaceTest extends TestCase
             ->assertSee('No hay pedidos con estos filtros');
     }
 
+    public function test_new_order_presentation_picker_has_a_search_field(): void
+    {
+        $variant = ProductVariant::factory()->create();
+
+        $component = Livewire::test(PurchaseWorkspace::class, ['view' => 'index'])
+            ->call('openCreate')
+            ->assertSee('Buscar producto, presentación o SKU')
+            ->assertSee($variant->sku);
+
+        $this->assertSame(1, substr_count($component->html(), 'data-adara-select-search'));
+    }
+
     public function test_livewire_creates_draft_and_can_confirm_it_from_detail(): void
     {
         $supplier = Supplier::factory()->create();

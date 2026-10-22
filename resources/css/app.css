@@ -1,5 +1,21 @@
 @import 'tailwindcss';
 
+@font-face {
+    font-family: 'DM Sans';
+    src: url('../fonts/DM-Sans.ttf') format('truetype');
+    font-style: normal;
+    font-weight: 100 1000;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Lora';
+    src: url('../fonts/Lora.ttf') format('truetype');
+    font-style: normal;
+    font-weight: 400 700;
+    font-display: swap;
+}
+
 @source '../views';
 @source '../views/livewire/sale-workspace.blade.php';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -21,8 +37,8 @@
     --color-adara-warning-bg: #FFF3DA;
     --color-adara-danger: #A94555;
     --color-adara-danger-bg: #FBEAED;
-    --font-sans: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-display: Georgia, 'Times New Roman', serif;
+    --font-sans: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
+    --font-display: 'Lora', Georgia, 'Times New Roman', serif;
     --radius-adara-control: 10px;
     --radius-adara-card: 18px;
     --radius-adara-dialog: 20px;
@@ -62,6 +78,7 @@
 
     body {
         min-width: 320px;
+        font-optical-sizing: auto;
     }
 
     :where(a, button, summary, input, select, textarea):focus-visible {

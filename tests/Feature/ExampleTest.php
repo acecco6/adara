@@ -16,7 +16,7 @@ class ExampleTest extends TestCase
         $response = $this->get('/');
 
         $response->assertOk()
-            ->assertSee('Qué lindo tener todo en orden')
+            ->assertSee('Bienvenida')
             ->assertSee('Navegación principal')
             ->assertSee('Stock que necesita atención')
             ->assertDontSee('aria-disabled="true"', false)

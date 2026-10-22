@@ -14,7 +14,7 @@
     <section class="flex flex-wrap items-end gap-3 rounded-adara-card border border-adara-border bg-adara-surface p-4 shadow-adara-panel" aria-label="Período del reporte">
         <label class="grid gap-1 text-sm font-semibold">Desde <input type="date" wire:model.live="from" class="rounded-adara-control border border-adara-border px-3 py-2 font-normal"></label>
         <label class="grid gap-1 text-sm font-semibold">Hasta <input type="date" wire:model.live="to" class="rounded-adara-control border border-adara-border px-3 py-2 font-normal"></label>
-        <p class="text-xs text-adara-readable-muted">Fechas de Argentina. Cada operación se informa en su fecha efectiva.</p>
+        <p class="text-xs text-adara-readable-muted">Cada operación se informa en su fecha efectiva.</p>
         @error('to') <p class="w-full text-sm text-red-700">{{ $message }}</p> @enderror
     </section>
 

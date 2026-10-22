@@ -1,4 +1,4 @@
-@props(['id', 'label', 'name' => null, 'hint' => null, 'error' => null, 'required' => false])
+@props(['id', 'label', 'name' => null, 'hint' => null, 'error' => null, 'required' => false, 'searchable' => false, 'searchPlaceholder' => null])
 
 @php
     $fieldName = $name ?? $id;
@@ -31,7 +31,15 @@
                 <path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
         </button>
-        <div id="{{ $id }}-listbox" data-adara-select-listbox role="listbox" aria-labelledby="{{ $id }}-label" class="absolute inset-x-0 top-full z-50 mt-2 hidden max-h-60 overflow-y-auto rounded-adara-control border border-adara-border bg-adara-surface p-1 shadow-adara-panel"></div>
+        <div data-adara-select-dropdown class="absolute inset-x-0 top-full z-50 mt-2 hidden overflow-hidden rounded-adara-control border border-adara-border bg-adara-surface shadow-adara-panel">
+            @if ($searchable)
+                <div class="p-1">
+                    <input id="{{ $id }}-search" type="search" data-adara-select-search role="searchbox" aria-label="Buscar en {{ mb_strtolower($label) }}" aria-controls="{{ $id }}-listbox" autocomplete="off" placeholder="{{ $searchPlaceholder ?? 'Buscar por nombre o código' }}" class="block min-h-10 w-full rounded-adara-control border border-adara-border bg-adara-surface px-3 py-2 text-sm text-adara-ink placeholder:text-adara-readable-muted focus:border-adara-primary focus:outline-none focus:ring-2 focus:ring-adara-primary/20">
+                </div>
+            @endif
+            <div id="{{ $id }}-listbox" data-adara-select-listbox role="listbox" aria-labelledby="{{ $id }}-label" class="max-h-60 overflow-y-auto p-1"></div>
+            <p data-adara-select-empty role="status" class="hidden px-3 py-2 text-sm text-adara-readable-muted"></p>
+        </div>
     </div>
     @if ($hint)
         <p id="{{ $id }}-hint" class="text-xs leading-5 text-adara-readable-muted">{{ $hint }}</p>

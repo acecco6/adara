@@ -214,7 +214,7 @@
                 <div class="flex items-center justify-between gap-3"><h3 class="font-semibold">Presentaciones</h3><x-adara.button variant="ghost" wire:click="addOrderLine">Agregar presentación</x-adara.button></div>
                 @foreach ($orderLines as $position => $line)
                     <div wire:key="purchase-form-line-{{ $line['_key'] }}" class="grid gap-3 rounded-adara-control border border-adara-border p-3 sm:grid-cols-[minmax(0,1fr)_92px_120px_auto] sm:items-end">
-                        <x-adara.select id="purchase-variant-{{ $position }}" name="orderLines.{{ $position }}.variant_id" label="Presentación" wire:model="orderLines.{{ $position }}.variant_id" required>
+                        <x-adara.select id="purchase-variant-{{ $position }}" name="orderLines.{{ $position }}.variant_id" label="Presentación" :searchable="true" search-placeholder="Buscar producto, presentación o SKU" wire:model="orderLines.{{ $position }}.variant_id" required>
                             <option value="">Elegir presentación</option>
                             @foreach ($variants as $variant)<option value="{{ $variant->id }}">{{ $variant->group->name }} · {{ $variant->name }} · {{ $variant->sku }}</option>@endforeach
                         </x-adara.select>

@@ -6,7 +6,7 @@
         <label class="grid gap-1 text-sm font-semibold">Desde<input type="date" wire:model.live="from" class="rounded-adara-control border border-adara-border px-3 py-2 font-normal"></label>
         <label class="grid gap-1 text-sm font-semibold">Hasta<input type="date" wire:model.live="to" class="rounded-adara-control border border-adara-border px-3 py-2 font-normal"></label>
         <label class="grid gap-1 text-sm font-semibold">Medio<select wire:model.live="method" class="rounded-adara-control border border-adara-border bg-adara-surface px-3 py-2 font-normal"><option value="all">Todos</option>@foreach ($methods as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></label>
-        <p class="text-xs text-adara-readable-muted">Fechas de Argentina. El importe es lo aplicado a ventas, después del vuelto.</p>
+        <p class="text-xs text-adara-readable-muted">El importe es lo aplicado a ventas, después del vuelto.</p>
         @error('to')<p class="w-full text-sm text-red-700" role="alert">{{ $message }}</p>@enderror
     </section>
     <p wire:loading.delay wire:target="from,to,method" role="status" class="text-sm text-adara-readable-muted">Actualizando cobros…</p>

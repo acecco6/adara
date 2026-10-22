@@ -8,6 +8,9 @@ function enhanceSelect(root) {
     const trigger = root.querySelector('[data-adara-select-trigger]');
     const value = root.querySelector('[data-adara-select-value]');
     const listbox = root.querySelector('[data-adara-select-listbox]');
+    const dropdown = root.querySelector('[data-adara-select-dropdown]') || listbox;
+    const searchInput = root.querySelector('[data-adara-select-search]');
+    const emptyMessage = root.querySelector('[data-adara-select-empty]');
     const validation = root.querySelector('[data-adara-select-validation]');
     let typed = '';
     let typedAt = 0;
@@ -18,7 +21,7 @@ function enhanceSelect(root) {
 
     const previous = enhancedControls.get(root);
 
-    if (previous?.select === select && previous.trigger === trigger && previous.listbox === listbox && previous.label === label) {
+    if (previous?.select === select && previous.trigger === trigger && previous.listbox === listbox && previous.label === label && previous.searchInput === searchInput) {
         select.dataset.adaraEnhanced = 'true';
         select.tabIndex = -1;
         select.setAttribute('aria-hidden', 'true');
@@ -56,10 +59,37 @@ function enhanceSelect(root) {
         }
     }
 
+    function normalizeSearchText(text) {
+        return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es-AR');
+    }
+
+    function filterOptions() {
+        const query = normalizeSearchText(searchInput?.value.trim() || '');
+        let visibleOptions = 0;
+
+        for (const option of listbox.querySelectorAll('[role="option"]')) {
+            const matches = query === '' || normalizeSearchText(option.textContent).includes(query);
+            option.hidden = !matches;
+
+            if (matches) {
+                visibleOptions++;
+            }
+        }
+
+        if (emptyMessage) {
+            emptyMessage.textContent = query === '' ? 'No hay opciones disponibles.' : 'No encontramos coincidencias. Probá con otro texto.';
+            emptyMessage.classList.toggle('hidden', visibleOptions > 0);
+        }
+    }
+
     function close(restoreFocus = false) {
-        listbox.classList.add('hidden');
+        dropdown.classList.add('hidden');
         trigger.setAttribute('aria-expanded', 'false');
         delete root.dataset.adaraOpen;
+
+        if (searchInput) {
+            searchInput.value = '';
+        }
 
         if (openControl?.root === root) {
             openControl = null;
@@ -71,7 +101,7 @@ function enhanceSelect(root) {
     }
 
     function enabledOptions() {
-        return [...listbox.querySelectorAll('[role="option"]:not([aria-disabled="true"])')];
+        return [...listbox.querySelectorAll('[role="option"]:not([aria-disabled="true"])')].filter((option) => !option.hidden);
     }
 
     function focusOption(position) {
@@ -97,13 +127,6 @@ function enhanceSelect(root) {
             return item;
         });
 
-        if (items.length === 0) {
-            const message = document.createElement('p');
-            message.className = 'px-3 py-2 text-sm text-adara-readable-muted';
-            message.textContent = 'No hay opciones disponibles.';
-            items.push(message);
-        }
-
         listbox.replaceChildren(...items);
     }
 
@@ -113,15 +136,23 @@ function enhanceSelect(root) {
         }
 
         openControl?.close();
+        if (searchInput) {
+            searchInput.value = '';
+        }
         buildOptions();
-        listbox.classList.remove('hidden');
+        filterOptions();
+        dropdown.classList.remove('hidden');
         trigger.setAttribute('aria-expanded', 'true');
         root.dataset.adaraOpen = 'true';
         openControl = { root, close };
 
-        const options = enabledOptions();
-        const selectedPosition = options.findIndex((option) => Number(option.dataset.index) === select.selectedIndex);
-        focusOption(selectedPosition >= 0 ? selectedPosition : 0);
+        if (searchInput) {
+            searchInput.focus();
+        } else {
+            const options = enabledOptions();
+            const selectedPosition = options.findIndex((option) => Number(option.dataset.index) === select.selectedIndex);
+            focusOption(selectedPosition >= 0 ? selectedPosition : 0);
+        }
     }
 
     function choose(index) {
@@ -198,6 +229,19 @@ function enhanceSelect(root) {
         }
     }, listenerOptions);
 
+    searchInput?.addEventListener('input', filterOptions, listenerOptions);
+    searchInput?.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowDown' && enabledOptions().length > 0) {
+            event.preventDefault();
+            focusOption(0);
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            close(true);
+        } else if (event.key === 'Tab') {
+            close();
+        }
+    }, listenerOptions);
+
     label.addEventListener('click', (event) => {
         event.preventDefault();
         open();
@@ -217,7 +261,7 @@ function enhanceSelect(root) {
     }, listenerOptions);
 
     select.form?.addEventListener('reset', () => queueMicrotask(sync), listenerOptions);
-    enhancedControls.set(root, { select, trigger, listbox, label, listeners, sync });
+    enhancedControls.set(root, { select, trigger, listbox, label, searchInput, listeners, sync });
     sync();
 }
 
