@@ -7,6 +7,9 @@ vendor
 .env
 .env.*
 !.env.example
+.env copy
+database/*.sqlite*
+database/*.db
 storage/*.key
 storage/logs/*
 storage/framework/cache/*
