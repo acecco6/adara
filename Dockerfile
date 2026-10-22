@@ -33,7 +33,8 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Configuración del virtual host de Apache
 COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
-RUN a2enmod rewrite headers
+RUN a2dismod mpm_event mpm_worker 2>/dev/null || true; \
+    a2enmod mpm_prefork rewrite headers
 
 WORKDIR /var/www/html
 
