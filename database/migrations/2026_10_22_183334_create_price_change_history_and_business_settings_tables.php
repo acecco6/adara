@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\Database\PortableTrigger;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -40,11 +41,11 @@ return new class extends Migration
             $table->unsignedBigInteger('new_price_cents');
             $table->string('previous_markup_decimal');
             $table->string('new_markup_decimal');
-            $table->unique(['price_change_event_id', 'product_variant_id']);
+            $table->unique(['price_change_event_id', 'product_variant_id'], 'price_event_variant_unique');
         });
         foreach (['price_change_events', 'price_change_lines'] as $table) {
-            DB::statement("CREATE TRIGGER {$table}_immutable_update BEFORE UPDATE ON {$table} BEGIN SELECT RAISE(ABORT, 'price history is immutable'); END");
-            DB::statement("CREATE TRIGGER {$table}_immutable_delete BEFORE DELETE ON {$table} BEGIN SELECT RAISE(ABORT, 'price history is immutable'); END");
+            PortableTrigger::create("CREATE TRIGGER {$table}_immutable_update BEFORE UPDATE ON {$table} BEGIN SELECT RAISE(ABORT, 'price history is immutable'); END");
+            PortableTrigger::create("CREATE TRIGGER {$table}_immutable_delete BEFORE DELETE ON {$table} BEGIN SELECT RAISE(ABORT, 'price history is immutable'); END");
         }
     }
 

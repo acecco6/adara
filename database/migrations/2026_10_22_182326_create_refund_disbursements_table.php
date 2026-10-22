@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\Database\PortableTrigger;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -23,9 +24,9 @@ return new class extends Migration
             $table->timestamp('created_at')->useCurrent();
             $table->index(['sale_cancellation_id', 'paid_at', 'id']);
         });
-        DB::statement("CREATE TRIGGER refund_disbursements_valid_insert BEFORE INSERT ON refund_disbursements WHEN NEW.method NOT IN ('cash', 'transfer', 'mercado_pago', 'card') OR typeof(NEW.amount_cents) <> 'integer' OR NEW.amount_cents <= 0 OR NEW.amount_cents + COALESCE((SELECT SUM(amount_cents) FROM refund_disbursements WHERE sale_cancellation_id = NEW.sale_cancellation_id), 0) > (SELECT refund_owed_cents FROM sale_cancellations WHERE id = NEW.sale_cancellation_id) OR NEW.paid_at < (SELECT cancelled_at FROM sale_cancellations WHERE id = NEW.sale_cancellation_id) BEGIN SELECT RAISE(ABORT, 'invalid refund disbursement'); END");
-        DB::statement("CREATE TRIGGER refund_disbursements_immutable_update BEFORE UPDATE ON refund_disbursements BEGIN SELECT RAISE(ABORT, 'refund disbursement is immutable'); END");
-        DB::statement("CREATE TRIGGER refund_disbursements_immutable_delete BEFORE DELETE ON refund_disbursements BEGIN SELECT RAISE(ABORT, 'refund disbursement is immutable'); END");
+        PortableTrigger::create("CREATE TRIGGER refund_disbursements_valid_insert BEFORE INSERT ON refund_disbursements WHEN NEW.method NOT IN ('cash', 'transfer', 'mercado_pago', 'card') OR typeof(NEW.amount_cents) <> 'integer' OR NEW.amount_cents <= 0 OR NEW.amount_cents + COALESCE((SELECT SUM(amount_cents) FROM refund_disbursements WHERE sale_cancellation_id = NEW.sale_cancellation_id), 0) > (SELECT refund_owed_cents FROM sale_cancellations WHERE id = NEW.sale_cancellation_id) OR NEW.paid_at < (SELECT cancelled_at FROM sale_cancellations WHERE id = NEW.sale_cancellation_id) BEGIN SELECT RAISE(ABORT, 'invalid refund disbursement'); END");
+        PortableTrigger::create("CREATE TRIGGER refund_disbursements_immutable_update BEFORE UPDATE ON refund_disbursements BEGIN SELECT RAISE(ABORT, 'refund disbursement is immutable'); END");
+        PortableTrigger::create("CREATE TRIGGER refund_disbursements_immutable_delete BEFORE DELETE ON refund_disbursements BEGIN SELECT RAISE(ABORT, 'refund disbursement is immutable'); END");
     }
 
     /**

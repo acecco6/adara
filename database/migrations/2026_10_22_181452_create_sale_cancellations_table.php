@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\Database\PortableTrigger;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -32,11 +33,11 @@ return new class extends Migration
             $table->string('unusable_reason', 500)->nullable();
         });
 
-        DB::statement("CREATE TRIGGER sale_cancellations_immutable_update BEFORE UPDATE ON sale_cancellations BEGIN SELECT RAISE(ABORT, 'sale cancellation is immutable'); END");
-        DB::statement("CREATE TRIGGER sale_cancellations_immutable_delete BEFORE DELETE ON sale_cancellations BEGIN SELECT RAISE(ABORT, 'sale cancellation is immutable'); END");
-        DB::statement("CREATE TRIGGER sale_cancellation_items_immutable_update BEFORE UPDATE ON sale_cancellation_items BEGIN SELECT RAISE(ABORT, 'sale cancellation items are immutable'); END");
-        DB::statement("CREATE TRIGGER sale_cancellation_items_immutable_delete BEFORE DELETE ON sale_cancellation_items BEGIN SELECT RAISE(ABORT, 'sale cancellation items are immutable'); END");
-        DB::statement("CREATE TRIGGER sales_status_transition BEFORE UPDATE OF status ON sales WHEN OLD.status <> 'confirmed' OR NEW.status <> 'cancelled' BEGIN SELECT RAISE(ABORT, 'invalid sale status transition'); END");
+        PortableTrigger::create("CREATE TRIGGER sale_cancellations_immutable_update BEFORE UPDATE ON sale_cancellations BEGIN SELECT RAISE(ABORT, 'sale cancellation is immutable'); END");
+        PortableTrigger::create("CREATE TRIGGER sale_cancellations_immutable_delete BEFORE DELETE ON sale_cancellations BEGIN SELECT RAISE(ABORT, 'sale cancellation is immutable'); END");
+        PortableTrigger::create("CREATE TRIGGER sale_cancellation_items_immutable_update BEFORE UPDATE ON sale_cancellation_items BEGIN SELECT RAISE(ABORT, 'sale cancellation items are immutable'); END");
+        PortableTrigger::create("CREATE TRIGGER sale_cancellation_items_immutable_delete BEFORE DELETE ON sale_cancellation_items BEGIN SELECT RAISE(ABORT, 'sale cancellation items are immutable'); END");
+        PortableTrigger::create("CREATE TRIGGER sales_status_transition BEFORE UPDATE OF status ON sales WHEN OLD.status <> 'confirmed' OR NEW.status <> 'cancelled' BEGIN SELECT RAISE(ABORT, 'invalid sale status transition'); END");
     }
 
     /**

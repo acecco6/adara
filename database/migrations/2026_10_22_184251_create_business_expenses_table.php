@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\Database\PortableTrigger;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -24,9 +25,9 @@ return new class extends Migration
             $table->index(['spent_on', 'id']);
         });
 
-        DB::statement("CREATE TRIGGER business_expenses_valid_insert BEFORE INSERT ON business_expenses WHEN typeof(NEW.amount_cents) <> 'integer' OR NEW.amount_cents <= 0 BEGIN SELECT RAISE(ABORT, 'invalid business expense'); END");
-        DB::statement("CREATE TRIGGER business_expenses_immutable_update BEFORE UPDATE ON business_expenses BEGIN SELECT RAISE(ABORT, 'business expense is immutable'); END");
-        DB::statement("CREATE TRIGGER business_expenses_immutable_delete BEFORE DELETE ON business_expenses BEGIN SELECT RAISE(ABORT, 'business expense is immutable'); END");
+        PortableTrigger::create("CREATE TRIGGER business_expenses_valid_insert BEFORE INSERT ON business_expenses WHEN typeof(NEW.amount_cents) <> 'integer' OR NEW.amount_cents <= 0 BEGIN SELECT RAISE(ABORT, 'invalid business expense'); END");
+        PortableTrigger::create("CREATE TRIGGER business_expenses_immutable_update BEFORE UPDATE ON business_expenses BEGIN SELECT RAISE(ABORT, 'business expense is immutable'); END");
+        PortableTrigger::create("CREATE TRIGGER business_expenses_immutable_delete BEFORE DELETE ON business_expenses BEGIN SELECT RAISE(ABORT, 'business expense is immutable'); END");
     }
 
     /**

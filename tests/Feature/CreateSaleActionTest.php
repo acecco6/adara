@@ -9,10 +9,12 @@ use App\Models\ProductVariant;
 use App\Models\Supplier;
 use App\Services\PurchaseOrderService;
 use DomainException;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RuntimeException;
 use Tests\TestCase;
 
 class CreateSaleActionTest extends TestCase
@@ -45,7 +47,7 @@ class CreateSaleActionTest extends TestCase
         $this->assertSame(1, $second->fresh()->balance->quantity_on_hand);
         $this->assertDatabaseHas('customer_payments', ['origin_sale_id' => $saleId, 'method' => 'cash', 'amount_cents' => 10000, 'cash_tendered_cents' => 20000, 'cash_change_cents' => 10000]);
         $this->assertDatabaseHas('customer_payments', ['origin_sale_id' => $saleId, 'method' => 'transfer', 'amount_cents' => 60000, 'commission_cents' => 300]);
-        $this->assertSame(70000, DB::table('payment_allocations')->where('sale_id', $saleId)->sum('amount_cents'));
+        $this->assertSame(70000, (int) DB::table('payment_allocations')->where('sale_id', $saleId)->sum('amount_cents'));
     }
 
     public function test_discount_remainder_goes_to_last_line_and_fiado_requires_customer(): void
@@ -166,7 +168,16 @@ class CreateSaleActionTest extends TestCase
     {
         $first = $this->stockedVariant(1, '100', 'rollback-first');
         $second = $this->stockedVariant(1, '100', 'rollback-second');
-        DB::statement("CREATE TRIGGER fail_sale_second_movement BEFORE INSERT ON stock_movements WHEN NEW.line_position = 1 AND (SELECT kind FROM stock_operations WHERE id = NEW.stock_operation_id) = 'sale' BEGIN SELECT RAISE(ABORT, 'simulated sale failure'); END");
+        $movementInsertCount = 0;
+        DB::listen(function (QueryExecuted $query) use (&$movementInsertCount): void {
+            if (str_starts_with(strtolower(trim($query->sql)), 'insert') && str_contains($query->sql, 'stock_movements')) {
+                $movementInsertCount++;
+
+                if ($movementInsertCount === 2) {
+                    throw new QueryException($query->connectionName, $query->sql, $query->bindings, new RuntimeException('Simulated stock movement failure.'));
+                }
+            }
+        });
 
         try {
             app(CreateSaleAction::class)->execute(
@@ -179,8 +190,6 @@ class CreateSaleActionTest extends TestCase
             $this->assertDatabaseCount('sale_items', 0);
             $this->assertSame(1, $first->fresh()->balance->quantity_on_hand);
             $this->assertSame(1, $second->fresh()->balance->quantity_on_hand);
-        } finally {
-            DB::statement('DROP TRIGGER IF EXISTS fail_sale_second_movement');
         }
     }
 

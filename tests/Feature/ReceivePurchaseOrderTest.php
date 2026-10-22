@@ -11,10 +11,12 @@ use App\Services\InitialStockService;
 use App\Services\Pricing\DecimalNumber;
 use App\Services\PurchaseOrderService;
 use DomainException;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RuntimeException;
 use Tests\TestCase;
 
 class ReceivePurchaseOrderTest extends TestCase
@@ -119,7 +121,16 @@ class ReceivePurchaseOrderTest extends TestCase
         $first = ProductVariant::factory()->create();
         $second = ProductVariant::factory()->create();
         $order = $this->confirmedOrder([[$first, '1', '100'], [$second, '1', '200']], '3');
-        DB::statement("CREATE TRIGGER fail_second_receipt_line BEFORE INSERT ON stock_movements WHEN NEW.line_position = 1 BEGIN SELECT RAISE(ABORT, 'simulated failure'); END");
+        $movementInsertCount = 0;
+        DB::listen(function (QueryExecuted $query) use (&$movementInsertCount): void {
+            if (str_starts_with(strtolower(trim($query->sql)), 'insert') && str_contains($query->sql, 'stock_movements')) {
+                $movementInsertCount++;
+
+                if ($movementInsertCount === 2) {
+                    throw new QueryException($query->connectionName, $query->sql, $query->bindings, new RuntimeException('Simulated stock movement failure.'));
+                }
+            }
+        });
 
         try {
             app(ReceivePurchaseOrderAction::class)->execute($order->id, $this->receivedLines($order), '0', 'rollback-receipt');
@@ -134,8 +145,6 @@ class ReceivePurchaseOrderTest extends TestCase
             $this->assertNull($first->fresh()->current_unit_cost_10000);
             $this->assertNull($first->fresh()->current_price_cents);
             $this->assertSame('confirmed', $order->fresh()->status);
-        } finally {
-            DB::statement('DROP TRIGGER IF EXISTS fail_second_receipt_line');
         }
     }
 
