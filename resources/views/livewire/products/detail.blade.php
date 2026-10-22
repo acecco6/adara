@@ -1,11 +1,16 @@
+@php
+    $money = fn (int $cents): string => '$ '.number_format(intdiv($cents, 100), 0, ',', '.').','.str_pad((string) ($cents % 100), 2, '0', STR_PAD_LEFT);
+    $unitCost = fn (int $tenThousandths): string => '$ '.number_format(intdiv($tenThousandths, 10000), 0, ',', '.').','.str_pad((string) ($tenThousandths % 10000), 4, '0', STR_PAD_LEFT);
+@endphp
+
 <div class="flex flex-col gap-6">
     <header class="flex flex-wrap items-start justify-between gap-4">
         <div>
             <p class="text-[11px] font-extrabold uppercase tracking-[0.16em] text-adara-primary">Producto</p>
             <h1 class="mt-2 font-display text-[30px] font-semibold text-adara-ink">{{ $group->name }}</h1>
-            <p class="mt-2 text-sm text-adara-readable-muted">Cada presentación tiene código, stock, costo y precio independientes.</p>
+            <p class="mt-1 text-[13px] text-adara-readable-muted">{{ $group->category?->name ?? 'Sin categoría' }} · {{ $group->suppliers->pluck('name')->join(', ') ?: 'Sin proveedores' }}</p>
         </div>
-        <a href="{{ route('products.index') }}" wire:navigate class="inline-flex min-h-11 items-center rounded-adara-control border border-adara-border bg-adara-surface px-4 text-sm font-semibold hover:bg-adara-primary-light">Volver a productos</a>
+        <div class="flex flex-wrap gap-2"><a href="{{ route('products.index') }}" wire:navigate class="inline-flex min-h-11 items-center rounded-adara-control border border-adara-border bg-adara-surface px-4 text-sm font-semibold hover:bg-adara-primary-light">Volver a productos</a><x-adara.button x-on:click="$dispatch('adara:open', { id: 'product-edit' })" aria-haspopup="dialog" aria-controls="product-edit">Editar producto</x-adara.button></div>
     </header>
 
     @error('catalog') <x-adara.alert tone="danger">{{ $message }}</x-adara.alert> @enderror
@@ -30,7 +35,39 @@
         </section>
     @endif
 
-    <div class="grid gap-5 xl:grid-cols-2">
+    @php
+        $availableUnits = $group->variants->sum(fn ($variant) => $variant->balance?->quantity_on_hand ?? 0);
+        $minimumUnits = $group->variants->sum('minimum_stock');
+        $prices = $group->variants->where('is_active', true)->pluck('current_price_cents')->filter(fn ($price) => $price !== null);
+        $activeVariant = $group->variants->firstWhere('is_active', true);
+    @endphp
+
+    <div class="grid gap-5 xl:grid-cols-[1.12fr_0.88fr]">
+        <section class="rounded-adara-card border border-adara-border bg-adara-surface p-5 shadow-adara-panel sm:p-6" aria-labelledby="product-overview-title">
+            <div class="flex items-center gap-5">
+                <span class="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-adara-primary-light text-4xl text-adara-primary" aria-hidden="true">✦</span>
+                <div class="min-w-0"><x-adara.badge :tone="$activeVariant ? 'success' : 'neutral'">{{ $activeVariant ? 'Activo' : 'Sin presentaciones activas' }}</x-adara.badge><h2 id="product-overview-title" class="mt-2 font-display text-2xl font-semibold text-adara-ink">{{ $group->name }}</h2><p class="mt-1 text-xs leading-5 text-adara-readable-muted">{{ $group->description ?: 'Sin descripción' }}</p></div>
+            </div>
+            <div class="my-5 border-t border-adara-border"></div>
+            <div class="grid gap-4 sm:grid-cols-3">
+                <div><p class="text-[11px] text-adara-readable-muted">Precio desde</p><strong class="mt-1 block text-lg text-adara-ink">{{ $prices->isEmpty() ? 'Pendiente' : '$ '.number_format((int) $prices->min() / 100, 2, ',', '.') }}</strong></div>
+                <div><p class="text-[11px] text-adara-readable-muted">Presentaciones</p><strong class="mt-1 block text-lg text-adara-ink">{{ $group->variants->count() }}</strong></div>
+                <div><p class="text-[11px] text-adara-readable-muted">Unidades disponibles</p><strong class="mt-1 block text-lg text-adara-success">{{ $availableUnits }} u.</strong></div>
+            </div>
+            <p class="mt-5 rounded-adara-control border border-adara-border bg-adara-primary-light/50 p-3 text-xs leading-5 text-adara-readable-muted">Cada presentación conserva su propio código, costo de reposición y precio vigente. Los cambios de costo provienen de recepciones confirmadas.</p>
+        </section>
+        <section class="rounded-adara-card border border-adara-border bg-adara-surface p-5 shadow-adara-panel sm:p-6" aria-labelledby="product-inventory-title">
+            <div class="flex items-center justify-between gap-3"><h2 id="product-inventory-title" class="text-base font-bold">Inventario</h2><x-adara.badge :tone="$availableUnits <= $minimumUnits ? 'warning' : 'success'">{{ $availableUnits <= $minimumUnits ? 'Stock bajo' : 'Disponible' }}</x-adara.badge></div>
+            <p class="mt-5 text-[11px] text-adara-readable-muted">Unidades disponibles</p>
+            <p class="mt-1 text-[36px] font-extrabold leading-none tabular-nums text-adara-ink">{{ $availableUnits }} <span class="text-sm font-normal text-adara-readable-muted">u.</span></p>
+            <div class="mt-4 h-2 overflow-hidden rounded-full bg-adara-border"><div class="h-full rounded-full {{ $availableUnits <= $minimumUnits ? 'bg-adara-warning' : 'bg-adara-success' }}" style="width: {{ min(100, $minimumUnits > 0 ? (int) round($availableUnits * 100 / max(1, $minimumUnits * 2)) : ($availableUnits > 0 ? 100 : 0)) }}%"></div></div>
+            <div class="mt-5 flex flex-wrap gap-2"><a href="{{ route('inventory.index') }}" wire:navigate class="inline-flex min-h-10 items-center rounded-adara-control border border-adara-border px-4 text-xs font-bold text-adara-ink hover:bg-adara-primary-light">Ver y ajustar stock</a><a href="{{ route('sales.create') }}" wire:navigate class="inline-flex min-h-10 items-center rounded-adara-control bg-adara-primary px-4 text-xs font-bold text-white hover:bg-adara-primary-hover">Registrar venta</a></div>
+            <div class="mt-5 border-t border-adara-border pt-4 text-xs text-adara-readable-muted">Stock mínimo configurado: <strong class="text-adara-ink">{{ $minimumUnits }} u.</strong></div>
+        </section>
+    </div>
+
+    <x-adara.modal id="product-edit" title="Editar producto" description="Actualizá los datos o agregá otra presentación." wide wire:ignore.self>
+    <div class="grid gap-5 lg:grid-cols-2">
         <section class="rounded-adara-card border border-adara-border bg-adara-surface p-5 shadow-adara-panel sm:p-6" aria-labelledby="group-title">
             <h2 id="group-title" class="font-display text-xl font-semibold">Datos del producto</h2>
             <p class="mt-2 text-sm text-adara-readable-muted">Categoría: {{ $group->category?->name ?? 'Sin categoría' }}</p>
@@ -62,7 +99,7 @@
         </section>
         <section class="rounded-adara-card border border-adara-border bg-adara-surface p-5 shadow-adara-panel sm:p-6" aria-labelledby="new-variant-title">
             <h2 id="new-variant-title" class="font-display text-xl font-semibold">Agregar presentación</h2>
-            <p class="mt-2 text-sm text-adara-readable-muted">Comienza con stock cero. Cargá el costo real inicial por presentación; el precio se definirá cuando haya un recargo configurado.</p>
+            <p class="mt-2 text-sm text-adara-readable-muted">Comienza con stock cero. Después podés registrar existencias iniciales o una recepción.</p>
             <form wire:submit="addVariant" class="mt-5 flex flex-col gap-5">
                 <x-adara.input id="new-presentation" name="presentation" label="Presentación" hint="Por ejemplo, 100 ml o unidad." wire:model="presentation" required />
                 <x-adara.input id="new-sku" name="sku" label="Código SKU" hint="Opcional: se genera automáticamente." wire:model="sku" />
@@ -70,6 +107,7 @@
             </form>
         </section>
     </div>
+    </x-adara.modal>
 
     <section class="rounded-adara-card border border-adara-border bg-adara-surface p-5 shadow-adara-panel sm:p-6" aria-labelledby="variants-title">
         <h2 id="variants-title" class="font-display text-xl font-semibold">Presentaciones</h2>
@@ -80,8 +118,8 @@
                         <div>
                             <h3 class="font-semibold">{{ $variant->name }}</h3>
                             <p class="mt-1 text-sm text-adara-readable-muted">Código {{ $variant->sku }} · Stock {{ $variant->balance?->quantity_on_hand ?? 0 }} · Mínimo {{ $variant->minimum_stock }}</p>
-                            <p class="mt-1 text-xs text-adara-readable-muted">Costo vigente: {{ $variant->current_unit_cost_10000 === null ? 'Pendiente' : '$ '.str_replace('.', ',', \App\Services\Pricing\UnitCost::fromTenThousandths($variant->current_unit_cost_10000)->toDecimal()) }}</p>
-                            <p class="mt-1 text-xs text-adara-readable-muted">Precio: {{ $variant->current_price_cents === null ? ($variant->current_unit_cost_10000 === null ? 'Pendiente de costo real' : 'Pendiente de definir recargo') : '$ '.str_replace('.', ',', \App\Services\Pricing\Money::fromCents($variant->current_price_cents)->toDecimal()) }}</p>
+                            <p class="mt-1 text-xs text-adara-readable-muted">Costo vigente: {{ $variant->current_unit_cost_10000 === null ? 'Pendiente' : $unitCost($variant->current_unit_cost_10000) }}</p>
+                            <p class="mt-1 text-xs text-adara-readable-muted">Precio: {{ $variant->current_price_cents === null ? 'Pendiente' : $money($variant->current_price_cents) }}</p>
                         </div>
                         <div class="flex flex-wrap items-start gap-2">
                             @if ($variant->is_active && ($variant->balance?->quantity_on_hand ?? 0) <= $variant->minimum_stock)
@@ -142,7 +180,7 @@
         <form id="initial-stock-fields" wire:submit="saveInitialStock" class="grid gap-4">
             <x-adara.input id="initial-quantity" name="initialQuantity" label="Cantidad disponible" type="number" min="1" step="1" inputmode="numeric" wire:model="initialQuantity" required />
             <x-adara.currency-input id="initial-cost" name="initialCost" label="Costo real unitario en ARS" hint="Sin separador de miles; hasta cuatro decimales, por ejemplo 1234,5678." wire:model="initialCost" required />
-            <p class="text-sm text-adara-readable-muted">El precio de venta quedará pendiente hasta configurar el recargo.</p>
+            <p class="text-sm text-adara-readable-muted">El primer precio de venta se calculará con el recargo vigente y se redondeará hacia arriba a $100.</p>
             @error('initialStock') <p role="alert" class="text-sm text-adara-danger">{{ $message }}</p> @enderror
         </form>
         <x-slot:footer>

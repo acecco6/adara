@@ -8,6 +8,7 @@ use App\Services\InitialStockService;
 use App\Services\StockAdjustmentService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -16,7 +17,7 @@ class InitialStockTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_records_initial_quantity_and_real_cost_once_without_inventing_price(): void
+    public function test_records_initial_quantity_and_real_cost_once_with_calculated_price(): void
     {
         $variant = ProductVariant::factory()->create();
         $service = app(InitialStockService::class);
@@ -34,8 +35,17 @@ class InitialStockTest extends TestCase
             'unit_cost_10000' => 12345678,
         ]);
         $this->assertSame(12345678, $variant->fresh()->current_unit_cost_10000);
-        $this->assertNull($variant->fresh()->current_price_cents);
+        $this->assertSame(230000, $variant->fresh()->current_price_cents);
         $this->assertDatabaseCount('stock_movements', 1);
+    }
+
+    public function test_initial_price_uses_particular_markup_when_present(): void
+    {
+        $variant = ProductVariant::factory()->create(['markup_override_decimal' => '50']);
+        app(InitialStockService::class)->record($variant->id, '1', '10000', 'initial-particular');
+
+        $this->assertSame(1500000, $variant->fresh()->current_price_cents);
+        $this->assertSame('80', DB::table('pricing_settings')->where('id', 1)->value('global_markup_decimal'));
     }
 
     public function test_rejects_a_second_initial_load_and_reused_key_with_different_data(): void
@@ -95,7 +105,7 @@ class InitialStockTest extends TestCase
             ->set('initialCost', '234,5000')
             ->call('saveInitialStock')
             ->assertHasNoErrors()
-            ->assertSee('Pendiente de definir recargo')
+            ->assertSee('$ 500,00')
             ->call('openMinimum', $variant->id)
             ->set('minimumQuantity', '4')
             ->call('saveMinimum')
@@ -111,7 +121,7 @@ class InitialStockTest extends TestCase
         $this->assertSame(4, $variant->fresh()->balance->quantity_on_hand);
         $this->assertSame(4, $variant->fresh()->minimum_stock);
         $this->assertSame(2345000, $variant->fresh()->current_unit_cost_10000);
-        $this->assertNull($variant->fresh()->current_price_cents);
+        $this->assertSame(50000, $variant->fresh()->current_price_cents);
         $this->assertDatabaseCount('stock_movements', 2);
     }
 

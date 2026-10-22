@@ -9,10 +9,11 @@
             ['label' => 'Pedidos a proveedor', 'icon' => 'clipboard-list', 'route' => 'purchases.index', 'active' => 'purchases.show'],
             ['label' => 'Recepción de compras', 'icon' => 'truck', 'route' => 'purchases.receipts'],
             ['label' => 'Ventas', 'icon' => 'shopping-cart', 'route' => 'sales.index'],
+            ['label' => 'Cobros', 'icon' => 'inbox', 'route' => 'payments.index'],
             ['label' => 'Nueva venta', 'icon' => 'sparkles', 'route' => 'sales.create'],
         ]],
         ['label' => 'Administración', 'items' => [
-            ['label' => 'Clientas', 'icon' => 'users', 'route' => 'customers.index'],
+            ['label' => 'Clientas', 'icon' => 'users', 'route' => 'customers.index', 'active' => 'customers.debts'],
             ['label' => 'Proveedores', 'icon' => 'package-check', 'route' => 'suppliers.index'],
             ['label' => 'Categorías', 'icon' => 'tags', 'route' => 'categories.index'],
             ['label' => 'Reportes', 'icon' => 'chart-no-axes-combined', 'route' => 'reports.index'],

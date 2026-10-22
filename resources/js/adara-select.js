@@ -1,10 +1,7 @@
 let openControl = null;
+const enhancedControls = new WeakMap();
 
 function enhanceSelect(root) {
-    if (root.dataset.adaraSelectReady === 'true') {
-        return;
-    }
-
     const select = root.querySelector('[data-adara-select-native]');
     const label = root.querySelector('label');
     const custom = root.querySelector('[data-adara-select-ui]');
@@ -18,6 +15,25 @@ function enhanceSelect(root) {
     if (!select || select.multiple || !label || !custom || !trigger || !value || !listbox) {
         return;
     }
+
+    const previous = enhancedControls.get(root);
+
+    if (previous?.select === select && previous.trigger === trigger && previous.listbox === listbox && previous.label === label) {
+        select.dataset.adaraEnhanced = 'true';
+        select.tabIndex = -1;
+        select.setAttribute('aria-hidden', 'true');
+        custom.classList.remove('hidden');
+        previous.sync();
+        return;
+    }
+
+    if (openControl?.root === root) {
+        openControl.close();
+    }
+
+    previous?.listeners.abort();
+    const listeners = new AbortController();
+    const listenerOptions = { signal: listeners.signal };
 
     root.dataset.adaraSelectReady = 'true';
     select.dataset.adaraEnhanced = 'true';
@@ -132,7 +148,7 @@ function enhanceSelect(root) {
         } else {
             open();
         }
-    });
+    }, listenerOptions);
 
     trigger.addEventListener('keydown', (event) => {
         if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(event.key)) {
@@ -142,7 +158,7 @@ function enhanceSelect(root) {
             event.preventDefault();
             close(true);
         }
-    });
+    }, listenerOptions);
 
     listbox.addEventListener('click', (event) => {
         const option = event.target instanceof Element ? event.target.closest('[role="option"]') : null;
@@ -150,7 +166,7 @@ function enhanceSelect(root) {
         if (option) {
             choose(Number(option.dataset.index));
         }
-    });
+    }, listenerOptions);
 
     listbox.addEventListener('keydown', (event) => {
         const options = enabledOptions();
@@ -180,14 +196,14 @@ function enhanceSelect(root) {
                 match.focus();
             }
         }
-    });
+    }, listenerOptions);
 
     label.addEventListener('click', (event) => {
         event.preventDefault();
         open();
-    });
+    }, listenerOptions);
 
-    select.addEventListener('change', sync);
+    select.addEventListener('change', sync, listenerOptions);
     select.addEventListener('invalid', (event) => {
         event.preventDefault();
         trigger.setAttribute('aria-invalid', 'true');
@@ -198,9 +214,10 @@ function enhanceSelect(root) {
         }
 
         open();
-    });
+    }, listenerOptions);
 
-    select.form?.addEventListener('reset', () => queueMicrotask(sync));
+    select.form?.addEventListener('reset', () => queueMicrotask(sync), listenerOptions);
+    enhancedControls.set(root, { select, trigger, listbox, label, listeners, sync });
     sync();
 }
 

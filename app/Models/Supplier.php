@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['name', 'phone', 'email', 'notes', 'is_active'])]
 class Supplier extends Model
@@ -18,6 +19,12 @@ class Supplier extends Model
     public function groups(): BelongsToMany
     {
         return $this->belongsToMany(ProductGroup::class)->withTimestamps();
+    }
+
+    /** @return HasMany<PurchaseOrder, $this> */
+    public function purchaseOrders(): HasMany
+    {
+        return $this->hasMany(PurchaseOrder::class);
     }
 
     /** @return array<string, string> */

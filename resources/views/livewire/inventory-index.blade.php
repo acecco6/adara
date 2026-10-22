@@ -3,15 +3,21 @@
         <div>
             <p class="text-[11px] font-extrabold uppercase tracking-[0.16em] text-adara-primary">Inventario</p>
             <h1 class="mt-2 font-display text-[30px] font-semibold text-adara-ink">Stock y movimientos</h1>
-            <p class="mt-2 text-sm text-adara-readable-muted">Consultá el saldo de cada presentación y sus movimientos registrados.</p>
+            <p class="mt-1 text-[13px] text-adara-readable-muted">Seguí cada ingreso, venta y ajuste para saber siempre qué mercadería te queda.</p>
         </div>
-        <a href="{{ route('products.index') }}" wire:navigate class="inline-flex min-h-11 items-center rounded-adara-control border border-adara-border bg-adara-surface px-4 text-sm font-semibold hover:bg-adara-primary-light">Ver productos</a>
+        <a href="#inventory-list-title" class="inline-flex min-h-11 items-center rounded-adara-control bg-adara-primary px-4 text-sm font-semibold text-white hover:bg-adara-primary-hover">+ Ajustar stock</a>
     </header>
 
+    <section class="grid gap-3 md:grid-cols-3" aria-label="Resumen de existencias">
+        <x-adara.kpi-card label="Unidades disponibles" :value="number_format($availableUnits, 0, ',', '.')" detail="En presentaciones activas" />
+        <x-adara.kpi-card label="Presentaciones con stock" :value="number_format($presentationsInStock, 0, ',', '.')" detail="Con unidades disponibles para vender" tone="mint" />
+        <x-adara.kpi-card label="Stock bajo o agotado" :value="number_format($lowStockPresentations, 0, ',', '.')" detail="En el mínimo configurado o debajo" tone="amber" />
+    </section>
+
     <section class="overflow-hidden rounded-adara-card border border-adara-border bg-adara-surface shadow-adara-panel" aria-labelledby="inventory-list-title">
-        <div class="border-b border-adara-border p-5 sm:p-6">
-            <h2 id="inventory-list-title" class="font-display text-xl font-semibold">Existencias por presentación</h2>
-            <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_190px_190px]">
+        <div class="border-b border-adara-border p-4 sm:p-5">
+            <h2 id="inventory-list-title" class="text-base font-bold">Disponibilidad por presentación</h2>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_170px_170px] xl:items-end">
                 <x-adara.input id="inventory-search" name="search" type="search" label="Buscar producto o código" placeholder="Producto, presentación o SKU" wire:model.live.debounce.300ms="search" />
                 <x-adara.select id="inventory-status" name="status" label="Estado" wire:model.live="status">
                     <option value="active">Activas</option><option value="archived">Archivadas</option><option value="all">Todas</option>
@@ -23,21 +29,18 @@
             <div wire:loading.delay wire:target="search,status,level" role="status" class="mt-3 text-sm text-adara-readable-muted">Actualizando existencias…</div>
         </div>
         <div class="overflow-x-auto">
-            <table class="w-full min-w-[720px] text-left text-sm" aria-label="Existencias por presentación">
-                <thead class="bg-adara-background text-[11px] font-semibold uppercase tracking-wide text-adara-readable-muted"><tr><th scope="col" class="px-5 py-3">Producto y presentación</th><th scope="col" class="px-5 py-3">Código</th><th scope="col" class="px-5 py-3 text-right">Disponible</th><th scope="col" class="px-5 py-3 text-right">Mínimo</th><th scope="col" class="px-5 py-3">Estado</th><th scope="col" class="px-5 py-3 text-right">Acciones</th></tr></thead>
+            <table class="w-full min-w-[800px] text-left text-xs" aria-label="Existencias por presentación">
+                <thead class="bg-adara-background/70 text-[10px] font-semibold uppercase tracking-[0.08em] text-adara-readable-muted"><tr><th scope="col" class="px-5 py-3">Producto</th><th scope="col" class="px-4 py-3">Código</th><th scope="col" class="px-4 py-3">Disponible</th><th scope="col" class="px-4 py-3">Nivel visual</th><th scope="col" class="px-4 py-3">Estado</th><th scope="col" class="px-4 py-3 text-right">Acciones</th></tr></thead>
                 <tbody class="divide-y divide-adara-border">
                     @forelse ($variants as $variant)
-                        <tr wire:key="inventory-variant-{{ $variant->id }}">
-                            <td class="px-5 py-4"><a href="{{ route('products.show', $variant->product_group_id) }}" wire:navigate class="block font-semibold text-adara-ink hover:text-adara-primary hover:underline">{{ $variant->group->name }}</a><span class="text-adara-readable-muted">{{ $variant->name }}</span></td>
-                            <td class="px-5 py-4 text-adara-readable-muted">{{ $variant->sku }}</td>
-                            <td class="px-5 py-4 text-right font-semibold tabular-nums">{{ $variant->available }}</td>
-                            <td class="px-5 py-4 text-right tabular-nums">{{ $variant->minimum_stock }}</td>
-                            <td class="px-5 py-4"><div class="flex flex-wrap gap-1">
-                                @if ($variant->is_active && $variant->available <= $variant->minimum_stock)<x-adara.badge tone="warning">En mínimo o debajo</x-adara.badge>@endif
-                                @unless ($variant->is_active)<x-adara.badge>Archivada</x-adara.badge>@endunless
-                            </div></td>
-                            <td class="px-5 py-4"><div class="flex justify-end gap-1">
-                                <x-adara.button variant="ghost" wire:click="showHistory({{ $variant->id }})">Movimientos</x-adara.button>
+                        <tr wire:key="inventory-variant-{{ $variant->id }}" class="hover:bg-adara-background/50">
+                            <td class="px-5 py-3"><a href="{{ route('products.show', $variant->product_group_id) }}" wire:navigate class="flex items-center gap-3 font-bold text-adara-ink hover:text-adara-primary"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-adara-primary-light text-adara-primary" aria-hidden="true">✦</span><span><span class="block">{{ $variant->group->name }}</span><span class="block text-[10px] font-normal text-adara-readable-muted">{{ $variant->name }}</span></span></a></td>
+                            <td class="px-4 py-3 text-adara-readable-muted">{{ $variant->sku }}</td>
+                            <td class="px-4 py-3 font-bold tabular-nums">{{ $variant->available }} u.<span class="mt-0.5 block text-[10px] font-normal text-adara-readable-muted">Mín. {{ $variant->minimum_stock }}</span></td>
+                            <td class="px-4 py-3"><span class="block h-1.5 w-28 overflow-hidden rounded-full bg-adara-border"><span class="block h-full rounded-full {{ $variant->available <= $variant->minimum_stock ? 'bg-adara-warning' : 'bg-adara-success' }}" style="width: {{ min(100, $variant->minimum_stock > 0 ? (int) round($variant->available * 100 / max(1, $variant->minimum_stock * 2)) : ($variant->available > 0 ? 100 : 0)) }}%"></span></span></td>
+                            <td class="px-4 py-3">@if (! $variant->is_active)<x-adara.badge>Archivada</x-adara.badge>@elseif ($variant->available <= $variant->minimum_stock)<x-adara.badge tone="warning">Stock bajo</x-adara.badge>@else<x-adara.badge tone="success">Disponible</x-adara.badge>@endif</td>
+                            <td class="px-4 py-3"><div class="flex justify-end gap-1">
+                                <x-adara.button variant="ghost" wire:click="showHistory({{ $variant->id }})">Ver</x-adara.button>
                                 @if ($variant->is_active)<x-adara.button variant="outline" wire:click="openAdjustment({{ $variant->id }})">Ajustar</x-adara.button>@endif
                             </div></td>
                         </tr>
@@ -52,7 +55,7 @@
 
     <section id="inventory-history" tabindex="-1" x-on:adara:inventory-history.window="$el.focus(); $el.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })" class="overflow-hidden rounded-adara-card border border-adara-border bg-adara-surface shadow-adara-panel" aria-labelledby="inventory-history-title">
         <div class="flex flex-wrap items-start justify-between gap-3 border-b border-adara-border p-5 sm:p-6">
-            <div><h2 id="inventory-history-title" class="font-display text-xl font-semibold">Historial de movimientos</h2><p class="mt-1 text-sm text-adara-readable-muted">{{ $historyVariant ? $historyVariant->group->name.' · '.$historyVariant->name : 'Movimientos recientes de todas las presentaciones' }}</p></div>
+            <div><h2 id="inventory-history-title" class="text-base font-bold">Movimientos recientes</h2><p class="mt-1 text-xs text-adara-readable-muted">{{ $historyVariant ? $historyVariant->group->name.' · '.$historyVariant->name : 'Ingresos, ventas y ajustes registrados' }}</p></div>
             @if ($historyVariant)<x-adara.button variant="ghost" wire:click="clearHistory">Ver todos</x-adara.button>@endif
         </div>
         <div wire:loading.delay wire:target="showHistory,clearHistory,saveAdjustment" role="status" class="px-5 py-2 text-sm text-adara-readable-muted">Actualizando historial…</div>

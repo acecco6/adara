@@ -1,4 +1,4 @@
-@props(['variant' => 'primary', 'loading' => false])
+@props(['variant' => 'primary', 'loading' => false, 'disabled' => false])
 
 @php
     $variants = [
@@ -10,7 +10,7 @@
     ];
 @endphp
 
-<button @if ($loading) disabled aria-busy="true" @endif {{ $attributes->class([
+<button @disabled($disabled || $loading) @if ($loading) aria-busy="true" @endif {{ $attributes->class([
     'inline-flex min-h-11 items-center justify-center gap-2 rounded-adara-control border px-4 py-2.5 text-sm font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-55',
     $variants[$variant] ?? $variants['primary'],
 ])->merge(['type' => 'button']) }}>

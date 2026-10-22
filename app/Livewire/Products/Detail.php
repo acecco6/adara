@@ -96,6 +96,7 @@ class Detail extends Component
             'supplier_ids' => $this->supplierIds,
         ]);
         $this->resetErrorBag();
+        $this->dispatch('adara:close', id: 'product-edit');
         $this->dispatch('adara:toast', tone: 'success', message: 'Producto actualizado.');
     }
 
@@ -103,6 +104,7 @@ class Detail extends Component
     {
         $catalog->createVariant($this->groupId, ['presentation' => $this->presentation, 'sku' => $this->sku]);
         $this->reset('presentation', 'sku');
+        $this->dispatch('adara:close', id: 'product-edit');
         $this->dispatch('adara:toast', tone: 'success', message: 'Presentación agregada.');
     }
 

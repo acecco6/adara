@@ -5,7 +5,13 @@
             <h1 class="mt-2 font-display text-[30px] font-semibold text-adara-ink">{{ $kind === 'supplier' ? 'Proveedores' : 'Clientas' }}</h1>
             <p class="mt-2 text-sm text-adara-readable-muted">{{ $kind === 'supplier' ? 'Guardá los datos de quienes te venden productos.' : 'Organizá los contactos de tus clientas.' }}</p>
         </div>
-        <x-adara.button wire:click="startCreating" aria-haspopup="dialog" aria-controls="contact-form">{{ $kind === 'supplier' ? 'Nuevo proveedor' : 'Nueva clienta' }}</x-adara.button>
+        <div class="flex flex-wrap gap-2">
+            @if ($kind === 'customer')
+                <a href="{{ route('customers.debts') }}" wire:navigate class="inline-flex min-h-11 items-center rounded-adara-control border border-adara-border bg-adara-surface px-4 text-sm font-semibold text-adara-ink hover:text-adara-primary">Ver clientas con deuda</a>
+                <a href="{{ route('payments.index') }}" wire:navigate class="inline-flex min-h-11 items-center rounded-adara-control border border-adara-border bg-adara-surface px-4 text-sm font-semibold text-adara-ink hover:text-adara-primary">Ver cobros</a>
+            @endif
+            <x-adara.button wire:click="startCreating" aria-haspopup="dialog" aria-controls="contact-form">{{ $kind === 'supplier' ? 'Nuevo proveedor' : 'Nueva clienta' }}</x-adara.button>
+        </div>
     </header>
 
     <x-adara.modal id="contact-form" :title="($editingId === null ? 'Nuevo ' : 'Editar ').($kind === 'supplier' ? 'proveedor' : 'clienta')" wire:ignore.self>

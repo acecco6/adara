@@ -3,10 +3,16 @@
         <div>
             <p class="text-[11px] font-extrabold uppercase tracking-[0.16em] text-adara-primary">Catálogo</p>
             <h1 class="mt-2 font-display text-[30px] font-semibold leading-tight text-adara-ink">Productos</h1>
-            <p class="mt-2 max-w-2xl text-sm leading-6 text-adara-readable-muted">Organizá cada producto y sus presentaciones. El stock inicial y los precios se cargarán en sus próximos pasos.</p>
+            <p class="mt-1 max-w-2xl text-[13px] leading-5 text-adara-readable-muted">Precios y disponibilidad de todo lo que vendés, en un solo lugar.</p>
         </div>
         <x-adara.button x-on:click="$dispatch('adara:open', { id: 'nuevo-producto' })" aria-haspopup="dialog" aria-controls="nuevo-producto">Agregar producto</x-adara.button>
     </header>
+
+    <section class="grid gap-3 md:grid-cols-3" aria-label="Resumen del catálogo">
+        <x-adara.kpi-card label="Productos activos" :value="number_format($activeProducts, 0, ',', '.')" detail="Con alguna presentación activa" />
+        <x-adara.kpi-card label="Presentaciones activas" :value="number_format($activePresentations, 0, ',', '.')" detail="Códigos disponibles en el catálogo" tone="rose" />
+        <x-adara.kpi-card label="Con stock" :value="number_format($presentationsInStock, 0, ',', '.')" detail="Presentaciones activas con unidades" tone="mint" />
+    </section>
 
     <x-adara.modal id="nuevo-producto" title="Nuevo producto" description="Empezá con una presentación. Después podrás agregar otras en su detalle." :wide="true" wire:ignore.self>
         <form id="nuevo-producto-form" wire:submit="save" class="grid gap-5 md:grid-cols-2">
@@ -42,39 +48,63 @@
     </x-adara.modal>
 
     <section class="overflow-hidden rounded-adara-card border border-adara-border bg-adara-surface shadow-adara-panel" aria-label="Listado de productos">
-        <div class="grid gap-4 border-b border-adara-border p-5 sm:grid-cols-[minmax(0,1fr)_220px] sm:p-6">
-            <x-adara.input id="product-search" name="search" type="search" label="Buscar producto o código" wire:model.live.debounce.300ms="search" placeholder="Nombre, presentación o SKU" />
+        <div class="grid gap-3 border-b border-adara-border p-4 sm:grid-cols-[minmax(0,1fr)_170px_170px] sm:items-end sm:p-5">
+            <x-adara.input id="product-search" name="search" type="search" label="Buscar producto o código" wire:model.live.debounce.300ms="search" placeholder="Buscar por nombre o código..." />
+            <x-adara.select id="product-category-filter" name="selectedCategory" label="Categoría" wire:model.live="selectedCategory">
+                <option value="">Todas</option>
+                @foreach ($categories as $category)
+                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                @endforeach
+            </x-adara.select>
             <x-adara.select id="product-status" name="status" label="Estado" wire:model.live="status">
                 <option value="all">Todos</option>
                 <option value="active">Con presentaciones activas</option>
                 <option value="archived">Con presentaciones archivadas</option>
             </x-adara.select>
         </div>
-        <div wire:loading.delay wire:target="search,status" role="status" class="px-5 py-2 text-sm text-adara-readable-muted">Actualizando listado…</div>
+        <div wire:loading.delay wire:target="search,status,selectedCategory" role="status" class="px-5 py-2 text-sm text-adara-readable-muted">Actualizando listado…</div>
         <div class="overflow-x-auto">
-            <table class="w-full min-w-[620px] text-left text-sm" aria-label="Productos">
-                <thead class="bg-adara-background text-[11px] font-semibold uppercase tracking-wide text-adara-readable-muted">
+            <table class="w-full min-w-[840px] text-left text-xs" aria-label="Productos">
+                <thead class="bg-adara-background/70 text-[10px] font-semibold uppercase tracking-[0.08em] text-adara-readable-muted">
                     <tr>
-                        <th scope="col" class="px-5 py-3">Producto</th>
-                        <th scope="col" class="px-5 py-3">Presentaciones</th>
-                        <th scope="col" class="px-5 py-3">Categoría</th>
-                        <th scope="col" class="px-5 py-3">Estado</th>
-                        <th scope="col" class="px-5 py-3">Detalle</th>
+                        <th scope="col" class="px-4 py-3 sm:px-5">Producto</th>
+                        <th scope="col" class="px-4 py-3">Presentación</th>
+                        <th scope="col" class="px-4 py-3">Categoría</th>
+                        <th scope="col" class="px-4 py-3">Precio</th>
+                        <th scope="col" class="px-4 py-3">Stock</th>
+                        <th scope="col" class="px-4 py-3">Estado</th>
+                        <th scope="col" class="px-4 py-3"><span class="sr-only">Detalle</span></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-adara-border">
                     @forelse ($groups as $group)
-                        <tr wire:key="product-{{ $group->id }}">
-                            <td class="px-5 py-4 font-semibold text-adara-ink">{{ $group->name }}</td>
-                            <td class="px-5 py-4 text-adara-readable-muted">{{ $group->variants_count }} · {{ $group->variants->pluck('name')->join(', ') }}</td>
-                            <td class="px-5 py-4 text-adara-readable-muted">{{ $group->category?->name ?? 'Sin categoría' }}</td>
-                            <td class="px-5 py-4">
-                                <x-adara.badge :tone="$group->variants->contains('is_active', true) ? 'success' : 'neutral'">{{ $group->variants_count === 0 ? 'Sin presentaciones' : ($group->variants->contains('is_active', true) ? 'Activo' : 'Archivado') }}</x-adara.badge>
-                            </td>
-                            <td class="px-5 py-4 text-right"><a href="{{ route('products.show', $group) }}" wire:navigate class="inline-flex min-h-10 items-center rounded-adara-control px-3 font-semibold text-adara-primary hover:bg-adara-primary-light">Ver detalle</a></td>
-                        </tr>
+                        @forelse ($group->variants as $variant)
+                            @php
+                                $stock = $variant->balance?->quantity_on_hand ?? 0;
+                                $minimum = $variant->minimum_stock;
+                            @endphp
+                            <tr wire:key="product-variant-{{ $variant->id }}" class="hover:bg-adara-background/50">
+                                <td class="px-4 py-3 sm:px-5"><a href="{{ route('products.show', $group) }}" wire:navigate class="flex items-center gap-3 font-bold text-adara-ink hover:text-adara-primary"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-adara-primary-light text-adara-primary" aria-hidden="true">✦</span><span class="min-w-0 truncate">{{ $group->name }}</span></a></td>
+                                <td class="px-4 py-3"><span class="block font-semibold text-adara-ink">{{ $variant->name }}</span><span class="mt-0.5 block text-[10px] text-adara-readable-muted">{{ $variant->sku }}</span></td>
+                                <td class="px-4 py-3 text-adara-readable-muted">{{ $group->category?->name ?? 'Sin categoría' }}</td>
+                                <td class="px-4 py-3 font-bold tabular-nums text-adara-ink">{{ $variant->current_price_cents === null ? 'Pendiente' : '$ '.number_format($variant->current_price_cents / 100, 2, ',', '.') }}</td>
+                                <td class="px-4 py-3"><strong class="tabular-nums">{{ $stock }} u.</strong><span class="mt-1 block h-1 w-16 overflow-hidden rounded-full bg-adara-border"><span class="block h-full rounded-full {{ $stock <= $minimum ? 'bg-adara-warning' : 'bg-adara-success' }}" style="width: {{ min(100, $minimum > 0 ? (int) round($stock * 100 / max(1, $minimum * 2)) : ($stock > 0 ? 100 : 0)) }}%"></span></span></td>
+                                <td class="px-4 py-3"><x-adara.badge :tone="! $variant->is_active ? 'neutral' : ($stock <= $minimum ? 'warning' : 'success')">{{ ! $variant->is_active ? 'Archivado' : ($stock <= $minimum ? 'Stock bajo' : 'Disponible') }}</x-adara.badge></td>
+                                <td class="px-4 py-3 text-right"><a href="{{ route('products.show', $group) }}" wire:navigate class="inline-flex min-h-9 items-center rounded-adara-control px-2 font-bold text-adara-primary hover:bg-adara-primary-light" aria-label="Ver {{ $group->name }}, {{ $variant->name }}">Ver →</a></td>
+                            </tr>
+                        @empty
+                            <tr wire:key="product-empty-{{ $group->id }}" class="hover:bg-adara-background/50">
+                                <td class="px-4 py-3 font-bold text-adara-ink sm:px-5"><a href="{{ route('products.show', $group) }}" wire:navigate class="hover:text-adara-primary">{{ $group->name }}</a></td>
+                                <td class="px-4 py-3 text-adara-readable-muted">Sin presentaciones</td>
+                                <td class="px-4 py-3 text-adara-readable-muted">{{ $group->category?->name ?? 'Sin categoría' }}</td>
+                                <td class="px-4 py-3 text-adara-readable-muted">Pendiente</td>
+                                <td class="px-4 py-3 text-adara-readable-muted">—</td>
+                                <td class="px-4 py-3"><x-adara.badge tone="neutral">Sin presentación</x-adara.badge></td>
+                                <td class="px-4 py-3 text-right"><a href="{{ route('products.show', $group) }}" wire:navigate class="inline-flex min-h-9 items-center rounded-adara-control px-2 font-bold text-adara-primary hover:bg-adara-primary-light" aria-label="Ver {{ $group->name }}">Ver →</a></td>
+                            </tr>
+                        @endforelse
                     @empty
-                        <tr><td colspan="5" class="px-5 py-10 text-center">
+                        <tr><td colspan="7" class="px-5 py-10 text-center">
                             <p class="font-display text-lg font-semibold text-adara-ink">No hay productos para mostrar</p>
                             <p class="mt-2 text-sm text-adara-readable-muted">Agregá el primero o cambiá los filtros de búsqueda.</p>
                         </td></tr>
@@ -82,8 +112,7 @@
                 </tbody>
             </table>
         </div>
-        @if ($groups->hasPages())
-            <div class="border-t border-adara-border px-5 py-4">{{ $groups->links() }}</div>
-        @endif
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-adara-border px-5 py-3 text-[11px] text-adara-readable-muted"><span>Mostrando {{ $groups->count() }} de {{ $groups->total() }} productos · {{ $groups->getCollection()->sum(fn ($group) => $group->variants->count()) }} presentaciones en esta página</span><span>Abrí una presentación para ver el producto</span></div>
+        @if ($groups->hasPages())<div class="border-t border-adara-border px-5 py-4">{{ $groups->links() }}</div>@endif
     </section>
 </div>

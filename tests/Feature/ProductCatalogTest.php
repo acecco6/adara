@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Livewire\Products\Catalog;
 use App\Livewire\Products\Detail;
+use App\Models\Category;
 use App\Models\ProductGroup;
 use App\Models\ProductVariant;
 use App\Services\StockAdjustmentService;
@@ -56,6 +57,45 @@ class ProductCatalogTest extends TestCase
             ->set('status', 'archived')
             ->assertSee('Crema Facial')
             ->assertDontSee('Perfume Floral');
+    }
+
+    public function test_category_filter_keeps_catalog_groups_and_summary_based_on_all_products(): void
+    {
+        $perfumes = Category::factory()->create(['name' => 'Perfumes']);
+        $creams = Category::factory()->create(['name' => 'Cremas']);
+        $perfume = ProductGroup::factory()->create(['name' => 'Fragancia', 'category_id' => $perfumes->id]);
+        $cream = ProductGroup::factory()->create(['name' => 'Hidratante', 'category_id' => $creams->id]);
+        ProductVariant::factory()->for($perfume, 'group')->create();
+        ProductVariant::factory()->for($cream, 'group')->create();
+
+        Livewire::test(Catalog::class)
+            ->set('selectedCategory', (string) $perfumes->id)
+            ->assertSee('Fragancia')
+            ->assertDontSee('Hidratante')
+            ->assertSee('Mostrando 1 de 1 productos')
+            ->assertSee('Presentaciones activas');
+    }
+
+    public function test_catalog_shows_each_presentation_with_its_own_price(): void
+    {
+        $group = ProductGroup::factory()->create(['name' => 'SportDesk']);
+        $small = ProductVariant::factory()->for($group, 'group')->create([
+            'name' => '50 ml',
+            'sku' => 'AD-SPORT-50',
+            'current_price_cents' => 900000,
+        ]);
+        $large = ProductVariant::factory()->for($group, 'group')->create([
+            'name' => '100 ml',
+            'sku' => 'AD-SPORT-100',
+            'current_price_cents' => 1500000,
+        ]);
+
+        Livewire::test(Catalog::class)
+            ->assertSeeHtml('wire:key="product-variant-'.$small->id.'"')
+            ->assertSeeHtml('wire:key="product-variant-'.$large->id.'"')
+            ->assertSeeInOrder(['50 ml', 'AD-SPORT-50', '$ 9.000,00', '100 ml', 'AD-SPORT-100', '$ 15.000,00'])
+            ->assertSee('1 de 1 productos · 2 presentaciones en esta página')
+            ->assertDontSee('Precio desde');
     }
 
     public function test_detail_adds_and_edits_presentations_without_changing_prices(): void

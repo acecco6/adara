@@ -100,9 +100,9 @@ Aceptar cuando: anticipo inexistente (R59), pago parcial de deuda de $10.000 con
 R24 — Deudas sin vencimientos ni intereses
 Decisión. Registrar saldos pendientes de clientas sin fecha obligatoria ni automática de vencimiento y sin intereses moratorios o recargos por antigüedad.
 Aceptar cuando: deuda puede permanecer abierta indefinidamente; no hay proceso de mora automática.
-R25 — Cobro único distribuido por antigüedad de deudas
-Decisión. Un cobro puede aplicarse a varias ventas fiadas de la misma clienta, primero a las deudas más antiguas. Guardar asignaciones por venta. La comisión del cobro es única, no una por asignación.
-Aceptar cuando: deudas $12.000 (anterior) y $18.000 (posterior), cobro $20.000 → $12.000 a primera y $8.000 a segunda; saldo $10.000. Definir desempate estable de misma fecha en código.
+R25 — Cobro posterior asociado a la venta elegida
+Decisión actualizada el 22/10/2026 por indicación de la usuaria. El botón «Cobrar» de una venta aplica el dinero exclusivamente a esa venta, aunque la misma clienta tenga deudas más antiguas. Guardar la asignación a la venta elegida y una sola comisión por cobro. Una futura cobranza conjunta de varias ventas se resolverá en otro lugar; su alcance y criterio de distribución quedan pendientes, sin activar el reparto automático por antigüedad de la decisión anterior.
+Aceptar cuando: ventas pendientes de $12.000 (anterior) y $18.000 (posterior), «Cobrar» en la posterior por $18.000 → posterior saldada y anterior aún con $12.000. Rechazar $20.000 en ese mismo botón aunque la deuda conjunta sea $30.000.
 R26 — Anular cobros equivocados y registrar uno nuevo
 Decisión. No sobreescribir un cobro incorrecto. Anular con motivo obligatorio e historial; revertir asignaciones y comisiones afectadas, después registrar el cobro correcto. Una anulación administrativa no es reintegro real de dinero.
 Aceptar cuando: error $25.000 efectivo en vez de $20.000 transferencia → cobro anterior anulado, saldos/fees corregidos, nuevo cobro registrado; no doble contabilización. Validar encadenamiento de cobros posteriores.
@@ -235,7 +235,7 @@ Stock	stock_movements (y stock consolidado por SKU, si conviene)	Entradas/salida
 Ventas	sales, sale_lines, sale_cancellations, sale_returns, sale_return_lines, sale_exchange_links	Venta con snapshots, descuento global, anulación, devolución y cambio guiado
 Promociones	promotions, referencias/snapshots en sales	Vigencia sin superposición, aplicación automática o reemplazo confirmado
 Clientas/deudas	customers, customer_credit_limits, sale_receivables, receivable_writeoffs, writeoff_recoveries	Fiados, saldos activos, incobrables, recuperaciones, límites opcionales
-Dinero/cobros	payments, payment_allocations, payment_cancellations, chargebacks, refund_obligations, refund_disbursements, commission_adjustments, supplier_refunds, business_expenses	Cobros reales, métodos combinados, distribución automática FIFO cronológico, devoluciones y comisiones
+Dinero/cobros	payments, payment_allocations, payment_cancellations, chargebacks, refund_obligations, refund_disbursements, commission_adjustments, supplier_refunds, business_expenses	Cobros reales vinculados a la venta elegida, métodos combinados, devoluciones y comisiones; cobranza conjunta pendiente
 Auditoría	operation_audit_logs / eventos del dominio	Quién/cuándo/por qué; valores originales y reversos, confirmaciones extraordinarias
 
 
@@ -279,7 +279,7 @@ Reglas de negocio cerradas: centavos, costos unitarios con 4 decimales, conserva
 A. Alta y mantenimiento de producto: agrupador → SKU con código único automático/manual → recargo (global u override) → precio automático → mínimo de stock. No precio manual, no borrado si usado, desactivación solo stock cero.
 B. Compra y recepción: pedido sin efecto en inventario → recepción real total/parcial → diferencias de cantidad y costo advertidas → aplicar envío general/adicional sin duplicar → confirmar transacción → nuevo costo de reemplazo/precio → registrar pendiente. Cancelar pendientes con motivo. Correcciones posteriores por evento compensatorio, no reescritura de ventas pasadas.
 C. Venta: seleccionar SKU y validar stock → promoción automática si aplica, o descuento manual que la reemplace con confirmación → calcular advertencia bajo costo → cobrar con uno o varios medios o dejar deuda con clienta → advertir si límite opcional excedido → confirmar transacción → congelar snapshots → descontar stock → crear deuda y cobros reales. No permitir sobrepagos aplicados ni reservas.
-D. Cobranza: entrada real de dinero → aplicar cronológicamente a deudas activas más antiguas de la misma clienta → guardar distribución exacta y comisión sugerida/editada una sola vez. Error de carga ⇒ anulación motivada y nuevo cobro; contracargo real ⇒ movimiento distinto vinculado y reapertura de saldo.
+D. Cobranza desde una venta: entrada real de dinero → aplicar solo al saldo activo de esa venta → guardar asignación y comisión sugerida/editada una sola vez. La cobranza conjunta de varias ventas queda para otro flujo. Error de carga ⇒ anulación motivada y nuevo cobro; contracargo real ⇒ movimiento distinto vinculado y reapertura de saldo.
 E. Devolución/cambio: localizar venta original → calcular máximo devolvible, precio/descuento/costo histórico → indicar aptitud de artículo → crear reverso efectivo por fecha de devolución → reducir deuda primero → crear obligación de reintegro por excedente → registrar pago de reintegro realmente hecho. Para cambio guiado, nueva venta más compensación únicamente de importe disponible proveniente de esa devolución; no crear billetera global.
 F. Incobrables: baja total/parcial con razón y confirmación → separar pérdida de dinero cobrado → recuperación posterior vinculada sin reabrir deuda ni generar segunda venta. No mezclar con deuda activa ni con ingreso comercial normal.
 G. Ajustes y reintegros de proveedor: bonificación/obsequio/merma/devolución a proveedor se expresa como ajuste de stock, con motivo obligatorio; no cambia costo vigente ni crea ganancia/pérdida monetaria automática. Reintegro de proveedor es movimiento monetario independiente documentado.
@@ -310,7 +310,7 @@ E06	R07/R13 venta fiada con dos medios y pago cero	Stock baja, deudas correctas,
 E07	R11 confirmaciones simultáneas con una unidad disponible	Solo una venta confirma; stock nunca negativo
 E08	R14/R15/R43/R48/R50 ajustes varios	Stock cambia; nunca se crean ventas/gastos monetarios no aprobados
 E09	R22 devolución $8.000 con deuda $5.000	Deuda −$5.000 y obligación de reintegro $3.000, sin billetera
-E10	R23/R25 cobro $20.000 aplicado a deudas 12k/18k	Asignaciones 12k+8k; comisión única, base del cobro real
+E10	R23/R25 cobro desde venta posterior de $18.000 con otra deuda anterior de $12.000	Solo la venta posterior recibe $18.000; la deuda anterior no cambia; comisión única
 E11	R26 anular cobro anterior con cobros posteriores	Reasignaciones/saldos consistentes; no doble dinero ni comisión
 E12	R27 corrección de recepción que excede stock actual	Bloqueo explicativo, sin cambios parciales
 E13	R28/R29 parcial y cancelación de pendiente	Stock solo recibido; pedido cerrado parcialmente
@@ -354,7 +354,7 @@ Estos puntos no son reglas nuevas aprobadas. Codex debe documentar alternativas 
 2. Criterio preciso de redondeo y empates (R31): está aprobado el total exacto y asignación determinista, pero no el algoritmo específico ni momento exacto de redondear porcentajes. Documentar una política técnica única con casos de prueba; no cambiar totales monetarios sin aprobación.
 3. Sobreentrega superior al pedido (R45): se permite con advertencia y confirmación, pero debe especificarse cómo queda formalizada la ampliación/corrección de la cantidad autorizada y cómo impedir cantidades pendientes negativas, preservando lo solicitado originalmente.
 4. Reparto de descuentos históricos entre renglones (R06/R22/R52): es indispensable para devoluciones parciales; proponer distribución interna de importes exactos, sin habilitar descuentos manuales por línea.
-5. Cobros posteriores, reversiones y reasignación (R25/R26/R55): definir desempate de ventas del mismo día y reconstrucción segura de asignaciones si se anula o contracarga un cobro anterior y hay cobros posteriores. Evitar pagos «huérfanos» o deuda negativa.
+5. Cobros posteriores, reversiones y reasignación (R25/R26/R55): los cobros desde una venta se asignan solo a ella. Definir reconstrucción segura si se anula o contracarga un cobro anterior y hay cobros posteriores sobre esa venta. Una futura cobranza conjunta requiere decidir su criterio de asignación; evitar pagos «huérfanos» o deuda negativa.
 6. Resultado económico y clasificación (R15/R18/R19/R21/R44/R54/R56/R57): el producto excluye valoración monetaria automática de mermas, pero incluye estimaciones de beneficio, gastos, bajas/recoveries. Declarar fórmulas y rótulos para que usuario no confunda «ingresos», «recaudación», «margen comercial», «resultado estimado» y «dinero disponible»; evitar ajustes dobles.
 7. Recargos al cliente por medios de pago (R08): concretar medios habilitados, porcentajes, base imponible y restricciones legales antes de implementar cobros automáticos de recargo; nunca asumir legalidad por defecto.
 8. Reintegro parcial, compensaciones y comisiones de cambios (R22/R51/R53/R54): precisar orden de imputación del crédito de devolución, y cuándo se confirma dinero efectivamente entregado; nunca inventar entrada/salida ficticia por compensación interna aprobada de cambio guiado.

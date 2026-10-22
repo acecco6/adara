@@ -167,6 +167,9 @@ class InventoryIndex extends Component
             'movements' => $movements,
             'historyVariant' => $this->historyVariantId === null ? null : ProductVariant::with('group:id,name')->find($this->historyVariantId),
             'adjustmentVariant' => $this->adjustmentVariantId === null ? null : ProductVariant::with('group:id,name')->find($this->adjustmentVariantId),
+            'availableUnits' => (int) DB::table('stock_balances')->join('product_variants', 'product_variants.id', '=', 'stock_balances.product_variant_id')->where('product_variants.is_active', true)->sum('stock_balances.quantity_on_hand'),
+            'presentationsInStock' => DB::table('stock_balances')->join('product_variants', 'product_variants.id', '=', 'stock_balances.product_variant_id')->where('product_variants.is_active', true)->where('stock_balances.quantity_on_hand', '>', 0)->count(),
+            'lowStockPresentations' => DB::table('stock_balances')->join('product_variants', 'product_variants.id', '=', 'stock_balances.product_variant_id')->where('product_variants.is_active', true)->whereColumn('stock_balances.quantity_on_hand', '<=', 'product_variants.minimum_stock')->count(),
         ]);
     }
 }

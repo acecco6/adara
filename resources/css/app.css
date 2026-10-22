@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 
 @source '../views';
+@source '../views/livewire/sale-workspace.blade.php';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
 @theme {

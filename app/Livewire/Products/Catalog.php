@@ -4,6 +4,7 @@ namespace App\Livewire\Products;
 
 use App\Models\Category;
 use App\Models\ProductGroup;
+use App\Models\ProductVariant;
 use App\Models\Supplier;
 use App\Services\CatalogService;
 use Illuminate\Contracts\View\View;
@@ -17,6 +18,8 @@ class Catalog extends Component
     public string $search = '';
 
     public string $status = 'all';
+
+    public string $selectedCategory = '';
 
     public string $name = '';
 
@@ -37,6 +40,11 @@ class Catalog extends Component
     }
 
     public function updatedStatus(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedSelectedCategory(): void
     {
         $this->resetPage();
     }
@@ -77,10 +85,17 @@ class Catalog extends Component
             $query->whereHas('variants', fn ($variants) => $variants->where('is_active', $active));
         }
 
+        if ($this->selectedCategory !== '') {
+            $query->where('category_id', $this->selectedCategory);
+        }
+
         return view('livewire.products.catalog', [
             'groups' => $query->paginate(12),
             'categories' => Category::query()->where('is_active', true)->orderBy('name')->get(),
             'suppliers' => Supplier::query()->where('is_active', true)->orderBy('name')->get(),
+            'activeProducts' => ProductGroup::query()->whereHas('variants', fn ($variants) => $variants->where('is_active', true))->count(),
+            'activePresentations' => ProductVariant::query()->where('is_active', true)->count(),
+            'presentationsInStock' => ProductVariant::query()->where('is_active', true)->whereHas('balance', fn ($balances) => $balances->where('quantity_on_hand', '>', 0))->count(),
         ]);
     }
 }

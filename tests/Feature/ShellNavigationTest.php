@@ -10,18 +10,11 @@ class ShellNavigationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_each_planned_section_opens_a_named_page_with_an_honest_placeholder(): void
+    public function test_remaining_planned_sections_open_named_pages_with_honest_placeholders(): void
     {
         $this->withoutVite();
 
         $pages = [
-            ['purchases.index', [], 'Pedidos a proveedor'],
-            ['purchases.show', ['order' => 1], 'Detalle del pedido'],
-            ['purchases.receipts', [], 'Recepción de compras'],
-            ['sales.index', [], 'Ventas'],
-            ['sales.create', [], 'Nueva venta'],
-            ['reports.index', [], 'Reportes'],
-            ['settings.index', [], 'Configuración'],
             ['backups.index', [], 'Copias de seguridad'],
             ['help.index', [], 'Ayuda'],
         ];
@@ -34,9 +27,21 @@ class ShellNavigationTest extends TestCase
                 ->assertSee('Volver');
         }
 
+        $this->get(route('reports.index'))->assertOk()
+            ->assertSee('<title>Reportes · Adara Gestión</title>', false)
+            ->assertSee('Reportes y resultados')
+            ->assertDontSee('En preparación');
+
+        $this->get(route('settings.index'))->assertOk()
+            ->assertSee('<title>Configuración · Adara Gestión</title>', false)
+            ->assertSee('Recargo general')
+            ->assertDontSee('En preparación');
+
         $product = ProductGroup::factory()->create();
 
         $this->get(route('products.index'))->assertOk()->assertSee('<title>Productos · Adara Gestión</title>', false);
+        $this->get(route('sales.create'))->assertOk()->assertSee('Buscar por nombre o código')->assertDontSee('En preparación');
+        $this->get(route('sales.index'))->assertOk()->assertSee('<title>Historial de ventas · Adara Gestión</title>', false)->assertDontSee('En preparación');
         $this->get(route('products.show', $product))->assertOk()->assertSee('<title>Detalle del producto · Adara Gestión</title>', false);
         $this->get(route('inventory.index'))->assertOk()->assertSee('Existencias por presentación')->assertDontSee('En preparación');
         $this->get(route('categories.index'))->assertOk()->assertSee('Nueva categoría')->assertDontSee('En preparación');
@@ -69,7 +74,7 @@ class ShellNavigationTest extends TestCase
 
         $response->assertOk();
 
-        foreach (['products.index', 'inventory.index', 'purchases.index', 'purchases.receipts', 'sales.index', 'sales.create', 'customers.index', 'suppliers.index', 'categories.index', 'reports.index', 'settings.index', 'backups.index', 'help.index'] as $routeName) {
+        foreach (['products.index', 'inventory.index', 'purchases.index', 'purchases.receipts', 'sales.index', 'sales.create', 'payments.index', 'customers.index', 'suppliers.index', 'categories.index', 'reports.index', 'settings.index', 'backups.index', 'help.index'] as $routeName) {
             $response->assertSee('href="'.route($routeName).'"', false);
         }
 

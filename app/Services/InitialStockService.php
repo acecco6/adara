@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Services\Pricing\DecimalNumber;
+use App\Services\Pricing\Percentage;
+use App\Services\Pricing\PriceCalculator;
 use App\Services\Pricing\UnitCost;
 use DomainException;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -12,6 +14,8 @@ use InvalidArgumentException;
 
 class InitialStockService
 {
+    public function __construct(private PriceCalculator $prices) {}
+
     public function record(int $variantId, string $quantityInput, string $costInput, string $idempotencyKey): int
     {
         $quantity = DecimalNumber::parseUnsigned(trim($quantityInput), 0);
@@ -45,6 +49,12 @@ class InitialStockService
                     throw new DomainException('La carga inicial solo está disponible para una presentación activa, sin stock ni movimientos previos.');
                 }
 
+                $markup = $variant->markup_override_decimal ?? DB::table('pricing_settings')->where('id', 1)->value('global_markup_decimal');
+                if (! is_string($markup)) {
+                    throw new DomainException('Definí el recargo antes de cargar el stock inicial.');
+                }
+                $price = $this->prices->catalogPrice(UnitCost::fromTenThousandths($cost), Percentage::fromDecimal(str_replace(',', '.', $markup)))->cents;
+
                 $operationId = DB::table('stock_operations')->insertGetId([
                     'idempotency_key' => $idempotencyKey,
                     'request_fingerprint' => $fingerprint,
@@ -56,7 +66,7 @@ class InitialStockService
 
                 $costUpdated = DB::table('product_variants')->where('id', $variantId)
                     ->where('is_active', true)->whereNull('current_unit_cost_10000')
-                    ->update(['current_unit_cost_10000' => $cost, 'updated_at' => now()]);
+                    ->update(['current_unit_cost_10000' => $cost, 'current_price_cents' => $price, 'updated_at' => now()]);
                 $balanceUpdated = DB::table('stock_balances')->where('product_variant_id', $variantId)
                     ->where('quantity_on_hand', 0)
                     ->update(['quantity_on_hand' => $quantity, 'updated_at' => now()]);
