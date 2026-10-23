@@ -31,7 +31,7 @@
                 <path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
         </button>
-        <div data-adara-select-dropdown class="absolute inset-x-0 top-full z-50 mt-2 hidden overflow-hidden rounded-adara-control border border-adara-border bg-adara-surface shadow-adara-panel">
+        <div data-adara-select-dropdown class="absolute inset-x-0 top-full z-50 mt-2 hidden overflow-hidden rounded-adara-control border border-adara-primary/50 bg-adara-popover shadow-xl">
             @if ($searchable)
                 <div class="p-1">
                     <input id="{{ $id }}-search" type="search" data-adara-select-search role="searchbox" aria-label="Buscar en {{ mb_strtolower($label) }}" aria-controls="{{ $id }}-listbox" autocomplete="off" placeholder="{{ $searchPlaceholder ?? 'Buscar por nombre o código' }}" class="block min-h-10 w-full rounded-adara-control border border-adara-border bg-adara-surface px-3 py-2 text-sm text-adara-ink placeholder:text-adara-readable-muted focus:border-adara-primary focus:outline-none focus:ring-2 focus:ring-adara-primary/20">

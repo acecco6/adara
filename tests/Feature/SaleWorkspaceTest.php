@@ -5,9 +5,11 @@ namespace Tests\Feature;
 use App\Actions\Purchases\ReceivePurchaseOrderAction;
 use App\Livewire\SaleWorkspace;
 use App\Models\Customer;
+use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use App\Models\Supplier;
 use App\Services\PurchaseOrderService;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -17,15 +19,33 @@ class SaleWorkspaceTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_sale_catalog_shows_product_photo_only_when_it_exists(): void
+    {
+        $variant = $this->stockedVariant(1);
+
+        Livewire::test(SaleWorkspace::class)
+            ->assertSee('svg class="h-11 w-11"', false);
+
+        $image = ProductImage::factory()->for($variant->group, 'group')->create();
+
+        Livewire::test(SaleWorkspace::class)
+            ->assertSee(route('products.images.show', $image), false)
+            ->assertDontSee('svg class="h-11 w-11"', false);
+    }
+
     public function test_cart_quotes_current_price_and_prepares_payment_without_saving_sale(): void
     {
         $variant = $this->stockedVariant(2);
 
         Livewire::test(SaleWorkspace::class)
+            ->assertDontSee('Agregar cobro')
+            ->assertDontSee('Revisar venta')
             ->set('search', $variant->sku)
             ->assertSee($variant->sku)
             ->call('addVariant', $variant->id)
             ->assertSet('cart.0.quantity', '1')
+            ->assertSee('Agregar cobro')
+            ->assertSee('Revisar venta')
             ->assertSee('$ 200,00')
             ->call('addPayment')
             ->call('fillRemaining', 0)
@@ -33,11 +53,32 @@ class SaleWorkspaceTest extends TestCase
             ->set('cart.0.quantity', '2')
             ->assertSee('$ 400,00')
             ->call('addVariant', $variant->id)
-            ->assertSee('No hay más unidades disponibles')
+            ->assertDispatched('adara:toast', tone: 'error', message: 'No hay más unidades disponibles de esta presentación.')
             ->assertSet('cart.0.quantity', '2');
 
         $this->assertDatabaseCount('sales', 0);
         $this->assertSame(2, (int) DB::table('stock_balances')->where('product_variant_id', $variant->id)->value('quantity_on_hand'));
+    }
+
+    public function test_adding_a_visible_product_avoids_repeating_catalog_and_image_queries(): void
+    {
+        $variant = $this->stockedVariant(2);
+        $component = Livewire::test(SaleWorkspace::class);
+        $queries = [];
+
+        DB::listen(function (QueryExecuted $query) use (&$queries): void {
+            if (str_starts_with(strtolower(ltrim($query->sql)), 'select')) {
+                $queries[] = $query->sql;
+            }
+        });
+
+        $component->call('addVariant', $variant->id)->assertSet('cart.0.quantity', '1');
+
+        $this->assertCount(4, $queries);
+
+        $component->set('search', 'sin-coincidencias')
+            ->assertSee($variant->group->name)
+            ->assertSee('$ 200,00');
     }
 
     public function test_cart_keeps_line_when_stock_is_insufficient_and_blocks_unavailable_product(): void
@@ -56,7 +97,7 @@ class SaleWorkspaceTest extends TestCase
         Livewire::test(SaleWorkspace::class)
             ->call('addVariant', $variant->id)
             ->assertSet('cart', [])
-            ->assertSee('no tiene stock');
+            ->assertDispatched('adara:toast', tone: 'error', message: 'Esta presentación no tiene stock o precio disponible.');
     }
 
     public function test_review_and_repeated_confirmation_create_one_sale_and_one_stock_movement(): void
@@ -69,7 +110,7 @@ class SaleWorkspaceTest extends TestCase
             ->set('payments.0.method', 'transfer')
             ->call('fillRemaining', 0)
             ->call('reviewSale')
-            ->assertSee('Confirmar venta')
+            ->assertSee('Confirmar esta venta')
             ->call('confirmSale')
             ->assertSet('confirmedSaleId', 1)
             ->assertSet('cart', [])
@@ -103,7 +144,7 @@ class SaleWorkspaceTest extends TestCase
 
         DB::table('product_variants')->where('id', $variant->id)->update(['current_price_cents' => 30000]);
 
-        $component->call('confirmSale')->assertSee('cambió desde la revisión');
+        $component->call('confirmSale')->assertDispatched('adara:toast', fn (string $name, array $params): bool => str_contains($params['message'], 'cambió desde la revisión'));
         $this->assertDatabaseCount('sales', 0);
         $this->assertSame(1, (int) DB::table('stock_balances')->where('product_variant_id', $variant->id)->value('quantity_on_hand'));
 
@@ -122,7 +163,7 @@ class SaleWorkspaceTest extends TestCase
             ->call('reviewSale')
             ->set('cart.0.quantity', '2')
             ->call('confirmSale')
-            ->assertSee('El carrito cambió');
+            ->assertDispatched('adara:toast', tone: 'error', message: 'El carrito cambió. Revisá nuevamente la venta antes de confirmar.');
 
         $this->assertDatabaseCount('sales', 0);
         $this->assertSame(2, (int) DB::table('stock_balances')->where('product_variant_id', $variant->id)->value('quantity_on_hand'));
@@ -138,7 +179,7 @@ class SaleWorkspaceTest extends TestCase
             ->call('fillRemaining', 0)
             ->set('payments.0.cash_tendered', '300')
             ->call('reviewSale')
-            ->assertSee('vuelto en efectivo debe calcularse y confirmarse');
+            ->assertDispatched('adara:toast', fn (string $name, array $params): bool => str_contains($params['message'], 'vuelto en efectivo debe calcularse y confirmarse'));
 
         $this->assertDatabaseCount('sales', 0);
 
@@ -167,7 +208,7 @@ class SaleWorkspaceTest extends TestCase
             ->call('fillRemaining', 0)
             ->call('reviewSale')
             ->call('confirmSale')
-            ->assertSee('Confirmá expresamente');
+            ->assertDispatched('adara:toast', tone: 'error', message: 'Confirmá expresamente la venta debajo del costo de reposición.');
 
         $this->assertDatabaseCount('sales', 0);
 

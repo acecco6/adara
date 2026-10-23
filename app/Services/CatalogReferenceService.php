@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Models\Customer;
+use App\Models\Subcategory;
 use App\Models\Supplier;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -38,6 +39,54 @@ class CatalogReferenceService
         $category->update(['name' => $data['name']]);
 
         return $category;
+    }
+
+    /** @param array{category_id: int|string, name: string} $input */
+    public function saveSubcategory(?int $subcategoryId, array $input): Subcategory
+    {
+        $data = Validator::make([
+            'subcategory_category_id' => $input['category_id'],
+            'subcategory_name' => trim($input['name']),
+        ], [
+            'subcategory_category_id' => ['required', 'integer', 'exists:categories,id'],
+            'subcategory_name' => ['required', 'string', 'max:255'],
+        ], [
+            'subcategory_category_id.required' => 'Elegí una categoría.',
+            'subcategory_name.required' => 'Ingresá el nombre de la subcategoría.',
+        ])->validate();
+
+        $category = Category::findOrFail((int) $data['subcategory_category_id']);
+        $subcategory = $subcategoryId === null ? null : Subcategory::findOrFail($subcategoryId);
+
+        if (! $category->is_active && $category->id !== $subcategory?->category_id) {
+            throw ValidationException::withMessages(['subcategory_category_id' => 'Elegí una categoría activa.']);
+        }
+
+        if ($subcategory !== null && $subcategory->category_id !== $category->id && $subcategory->groups()->exists()) {
+            throw ValidationException::withMessages(['subcategory_category_id' => 'No se puede mover una subcategoría que ya tiene productos.']);
+        }
+
+        $duplicate = Subcategory::query()->where('category_id', $category->id)
+            ->when($subcategoryId !== null, fn ($query) => $query->whereKeyNot($subcategoryId))
+            ->pluck('name')
+            ->contains(fn (string $name): bool => mb_strtolower($name) === mb_strtolower($data['subcategory_name']));
+
+        if ($duplicate) {
+            throw ValidationException::withMessages(['subcategory_name' => 'Ya existe una subcategoría con ese nombre en esta categoría.']);
+        }
+
+        if ($subcategory === null) {
+            return Subcategory::create(['category_id' => $category->id, 'name' => $data['subcategory_name'], 'is_active' => true]);
+        }
+
+        $subcategory->update(['category_id' => $category->id, 'name' => $data['subcategory_name']]);
+
+        return $subcategory;
+    }
+
+    public function setSubcategoryActive(int $subcategoryId, bool $active): void
+    {
+        Subcategory::findOrFail($subcategoryId)->update(['is_active' => $active]);
     }
 
     /**

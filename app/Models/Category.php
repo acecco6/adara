@@ -20,6 +20,12 @@ class Category extends Model
         return $this->hasMany(ProductGroup::class);
     }
 
+    /** @return HasMany<Subcategory, $this> */
+    public function subcategories(): HasMany
+    {
+        return $this->hasMany(Subcategory::class);
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {

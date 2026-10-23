@@ -60,7 +60,7 @@
                 </table>
             </div>
             <div class="flex flex-wrap items-center justify-between gap-2 border-t border-adara-border px-5 py-3 text-[11px] text-adara-readable-muted"><span>Mostrando {{ $orders->count() }} de {{ $orders->total() }} pedidos</span><span>El envío general se registra una vez por pedido</span></div>
-            @if ($orders->hasPages())<div class="border-t border-adara-border px-5 py-4">{{ $orders->links() }}</div>@endif
+            @if ($orders->hasPages())<div class="border-t border-adara-border px-5 py-4">{{ $orders->links('components.adara.pagination', data: ['scrollTo' => false]) }}</div>@endif
         </section>
     @elseif ($view === 'receipts')
         <header class="flex flex-wrap items-start justify-between gap-4">
@@ -96,7 +96,7 @@
                 </table>
             </div>
             <div class="border-t border-adara-border px-5 py-3 text-[11px] text-adara-readable-muted">Mostrando {{ $receipts->count() }} de {{ $receipts->total() }} renglones recibidos</div>
-            @if ($receipts->hasPages())<div class="border-t border-adara-border px-5 py-4">{{ $receipts->links() }}</div>@endif
+            @if ($receipts->hasPages())<div class="border-t border-adara-border px-5 py-4">{{ $receipts->links('components.adara.pagination', data: ['scrollTo' => false]) }}</div>@endif
         </section>
     @else
         <header class="flex flex-wrap items-start justify-between gap-4">

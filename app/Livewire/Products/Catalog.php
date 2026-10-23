@@ -5,14 +5,18 @@ namespace App\Livewire\Products;
 use App\Models\Category;
 use App\Models\ProductGroup;
 use App\Models\ProductVariant;
+use App\Models\Subcategory;
 use App\Models\Supplier;
 use App\Services\CatalogService;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 class Catalog extends Component
 {
+    use WithFileUploads;
     use WithPagination;
 
     public string $search = '';
@@ -20,6 +24,8 @@ class Catalog extends Component
     public string $status = 'all';
 
     public string $selectedCategory = '';
+
+    public string $selectedSubcategory = '';
 
     public string $name = '';
 
@@ -30,6 +36,11 @@ class Catalog extends Component
     public string $sku = '';
 
     public string $categoryId = '';
+
+    public string $subcategoryId = '';
+
+    /** @var array<int, TemporaryUploadedFile> */
+    public array $photos = [];
 
     /** @var array<int, int|string> */
     public array $supplierIds = [];
@@ -46,7 +57,18 @@ class Catalog extends Component
 
     public function updatedSelectedCategory(): void
     {
+        $this->selectedSubcategory = '';
         $this->resetPage();
+    }
+
+    public function updatedSelectedSubcategory(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedCategoryId(): void
+    {
+        $this->subcategoryId = '';
     }
 
     public function save(CatalogService $catalog): void
@@ -57,8 +79,9 @@ class Catalog extends Component
             'presentation' => $this->presentation,
             'sku' => $this->sku,
             'category_id' => $this->categoryId,
+            'subcategory_id' => $this->subcategoryId,
             'supplier_ids' => $this->supplierIds,
-        ]);
+        ], $this->photos);
 
         $this->redirectRoute('products.show', ['product' => $group->id], navigate: true);
     }
@@ -66,7 +89,7 @@ class Catalog extends Component
     public function render(): View
     {
         $query = ProductGroup::query()
-            ->with(['category', 'variants.balance'])
+            ->with(['category', 'subcategory', 'variants.balance', 'primaryImage' => fn ($images) => $images->select('id', 'product_group_id', 'mime_type')])
             ->withCount('variants')
             ->orderByDesc('created_at')
             ->orderByDesc('id');
@@ -89,9 +112,14 @@ class Catalog extends Component
             $query->where('category_id', $this->selectedCategory);
         }
 
+        if ($this->selectedSubcategory !== '') {
+            $query->where('subcategory_id', $this->selectedSubcategory);
+        }
+
         return view('livewire.products.catalog', [
             'groups' => $query->paginate(12),
             'categories' => Category::query()->where('is_active', true)->orderBy('name')->get(),
+            'subcategories' => Subcategory::query()->where('is_active', true)->orderBy('name')->get(),
             'suppliers' => Supplier::query()->where('is_active', true)->orderBy('name')->get(),
             'activeProducts' => ProductGroup::query()->whereHas('variants', fn ($variants) => $variants->where('is_active', true))->count(),
             'activePresentations' => ProductVariant::query()->where('is_active', true)->count(),

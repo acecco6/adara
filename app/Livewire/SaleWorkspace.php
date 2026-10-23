@@ -32,8 +32,6 @@ class SaleWorkspace extends Component
     /** @var array<array-key, mixed> Client state is validated before confirmation. */
     public array $payments = [];
 
-    public string $message = '';
-
     #[Locked]
     public string $confirmationKey = '';
 
@@ -70,11 +68,10 @@ class SaleWorkspace extends Component
             );
             $this->reviewInputFingerprint = $this->inputFingerprint();
             $this->acceptBelowCost = false;
-            $this->message = '';
             $this->dispatch('adara:open', id: 'sale-confirmation');
         } catch (DomainException|InvalidArgumentException|RangeException $exception) {
             $this->review = [];
-            $this->message = $exception->getMessage();
+            $this->notifyError($exception->getMessage());
         }
     }
 
@@ -86,14 +83,14 @@ class SaleWorkspace extends Component
 
         if ($this->review === [] || $this->reviewInputFingerprint !== $this->inputFingerprint()) {
             $this->review = [];
-            $this->message = 'El carrito cambió. Revisá nuevamente la venta antes de confirmar.';
+            $this->notifyError('El carrito cambió. Revisá nuevamente la venta antes de confirmar.');
             $this->dispatch('adara:close', id: 'sale-confirmation');
 
             return;
         }
 
         if ($this->review['quote']['below_cost'] && ! $this->acceptBelowCost) {
-            $this->message = 'Confirmá expresamente la venta debajo del costo de reposición.';
+            $this->notifyError('Confirmá expresamente la venta debajo del costo de reposición.');
 
             return;
         }
@@ -110,7 +107,7 @@ class SaleWorkspace extends Component
             $this->dispatch('adara:open', id: 'sale-success');
         } catch (DomainException|InvalidArgumentException|RangeException $exception) {
             $this->review = [];
-            $this->message = $exception->getMessage();
+            $this->notifyError($exception->getMessage());
             $this->dispatch('adara:close', id: 'sale-confirmation');
         }
     }
@@ -136,7 +133,6 @@ class SaleWorkspace extends Component
         $this->discountType = 'none';
         $this->discountValue = '0';
         $this->search = '';
-        $this->message = '';
         $this->review = [];
         $this->reviewInputFingerprint = '';
         $this->acceptBelowCost = false;
@@ -154,7 +150,7 @@ class SaleWorkspace extends Component
         try {
             $lines = $this->saleLines();
         } catch (InvalidArgumentException $exception) {
-            $this->message = $exception->getMessage();
+            $this->notifyError($exception->getMessage());
 
             return;
         }
@@ -167,7 +163,7 @@ class SaleWorkspace extends Component
             try {
                 $quantity = DecimalNumber::parseUnsigned($line['quantity'], 0);
             } catch (InvalidArgumentException|RangeException) {
-                $this->message = 'Corregí la cantidad del producto.';
+                $this->notifyError('Corregí la cantidad del producto.');
 
                 return;
             }
@@ -179,7 +175,6 @@ class SaleWorkspace extends Component
             }
 
             $this->cart[$position]['quantity'] = (string) ($quantity - 1);
-            $this->message = '';
 
             return;
         }
@@ -187,11 +182,15 @@ class SaleWorkspace extends Component
 
     public function addVariant(int $variantId): void
     {
-        $variant = $this->variantQuery()->where('product_variants.id', $variantId)->first();
+        $variant = DB::table('product_variants')
+            ->leftJoin('stock_balances', 'stock_balances.product_variant_id', '=', 'product_variants.id')
+            ->where('product_variants.id', $variantId)
+            ->where('product_variants.is_active', true)
+            ->first(['product_variants.current_price_cents', 'product_variants.current_unit_cost_10000', 'stock_balances.quantity_on_hand']);
 
         if ($variant === null || $variant->current_price_cents === null || (int) $variant->current_price_cents <= 0
             || $variant->current_unit_cost_10000 === null || (int) $variant->quantity_on_hand <= 0) {
-            $this->message = 'Esta presentación no tiene stock o precio disponible.';
+            $this->notifyError('Esta presentación no tiene stock o precio disponible.');
 
             return;
         }
@@ -199,7 +198,7 @@ class SaleWorkspace extends Component
         try {
             $cart = $this->saleLines();
         } catch (InvalidArgumentException $exception) {
-            $this->message = $exception->getMessage();
+            $this->notifyError($exception->getMessage());
 
             return;
         }
@@ -209,35 +208,32 @@ class SaleWorkspace extends Component
                 try {
                     $quantity = DecimalNumber::parseUnsigned($line['quantity'], 0);
                 } catch (InvalidArgumentException|RangeException) {
-                    $this->message = 'Corregí la cantidad antes de agregar otra unidad.';
+                    $this->notifyError('Corregí la cantidad antes de agregar otra unidad.');
 
                     return;
                 }
 
                 if ($quantity >= (int) $variant->quantity_on_hand) {
-                    $this->message = 'No hay más unidades disponibles de esta presentación.';
+                    $this->notifyError('No hay más unidades disponibles de esta presentación.');
 
                     return;
                 }
 
                 $this->cart[$position]['quantity'] = (string) ($quantity + 1);
-                $this->message = '';
 
                 return;
             }
         }
 
         $this->cart[] = ['variant_id' => $variantId, 'quantity' => '1'];
-        $this->message = '';
     }
 
     public function removeVariant(int $variantId): void
     {
         try {
             $this->cart = array_values(array_filter($this->saleLines(), fn (array $line): bool => $line['variant_id'] !== $variantId));
-            $this->message = '';
         } catch (InvalidArgumentException $exception) {
-            $this->message = $exception->getMessage();
+            $this->notifyError($exception->getMessage());
         }
     }
 
@@ -265,7 +261,7 @@ class SaleWorkspace extends Component
         $quoteState = $this->currentQuote();
 
         if ($quoteState['quote'] === null) {
-            $this->message = $quoteState['error'] ?? 'Revisá el carrito.';
+            $this->notifyError($quoteState['error'] ?? 'Revisá el carrito.');
 
             return;
         }
@@ -279,13 +275,17 @@ class SaleWorkspace extends Component
                 }
             }
         } catch (InvalidArgumentException|RangeException) {
-            $this->message = 'Revisá los importes de los otros cobros.';
+            $this->notifyError('Revisá los importes de los otros cobros.');
 
             return;
         }
 
         $this->payments[$position]['amount'] = Money::fromCents(max(0, $quoteState['quote']['total'] - $otherPayments))->toDecimal();
-        $this->message = '';
+    }
+
+    private function notifyError(string $message): void
+    {
+        $this->dispatch('adara:toast', tone: 'error', message: $message);
     }
 
     public function render(SaleQuoteService $quotes): View
@@ -305,7 +305,15 @@ class SaleWorkspace extends Component
             });
         }
 
-        $results = $resultsQuery->orderBy('product_groups.name')->orderBy('product_variants.name')->limit(12)->get();
+        $results = $resultsQuery
+            ->addSelect(['primary_image_id' => DB::table('product_images')
+                ->select('id')
+                ->whereColumn('product_images.product_group_id', 'product_groups.id')
+                ->orderByDesc('is_primary')
+                ->orderBy('position')
+                ->orderBy('id')
+                ->limit(1)])
+            ->orderBy('product_groups.name')->orderBy('product_variants.name')->limit(12)->get();
 
         try {
             $cartLines = $this->saleLines();
@@ -313,8 +321,13 @@ class SaleWorkspace extends Component
             $cartLines = [];
         }
 
-        $selected = $cartLines === [] ? collect() : $this->variantQuery()
-            ->whereIn('product_variants.id', array_column($cartLines, 'variant_id'))->get()->keyBy('id');
+        $selected = $results->keyBy('id');
+        $missingIds = array_diff(array_column($cartLines, 'variant_id'), $selected->keys()->all());
+
+        if ($missingIds !== []) {
+            $selected = $selected->union($this->variantQuery()
+                ->whereIn('product_variants.id', $missingIds)->get()->keyBy('id'));
+        }
 
         $displayPayments = [];
 
@@ -392,7 +405,7 @@ class SaleWorkspace extends Component
             ->leftJoin('categories', 'categories.id', '=', 'product_groups.category_id')
             ->leftJoin('stock_balances', 'stock_balances.product_variant_id', '=', 'product_variants.id')
             ->where('product_variants.is_active', true)
-            ->select('product_variants.id', 'product_variants.sku', 'product_variants.name',
+            ->select('product_variants.id', 'product_variants.sku', 'product_variants.name', 'product_variants.product_group_id',
                 'product_variants.current_price_cents', 'product_variants.current_unit_cost_10000',
                 'product_groups.name as product_name', 'categories.name as category_name', 'stock_balances.quantity_on_hand');
     }

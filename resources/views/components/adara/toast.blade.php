@@ -9,7 +9,7 @@
             this.message = detail.message || '';
             this.tone = ['success', 'info', 'warning', 'error'].includes(detail.tone) ? detail.tone : 'success';
             this.visible = true;
-            if (this.tone !== 'error') this.timer = setTimeout(() => this.dismiss(), detail.duration ?? 5000);
+            this.timer = setTimeout(() => this.dismiss(), detail.duration ?? (this.tone === 'error' ? 3500 : 2500));
         },
         dismiss() {
             clearTimeout(this.timer);
@@ -34,6 +34,8 @@
         class="pointer-events-auto flex items-start justify-between gap-3 rounded-adara-control border bg-adara-surface px-4 py-3 shadow-xl"
     >
         <span x-text="message" class="text-sm font-medium leading-6"></span>
-        <button type="button" x-on:click="dismiss()" class="shrink-0 rounded-adara-control px-2 py-1 text-xs font-semibold hover:bg-adara-background" aria-label="Cerrar aviso">Cerrar</button>
+        <button type="button" x-on:click="dismiss()" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-adara-control transition-colors hover:bg-adara-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-adara-primary" aria-label="Cerrar notificación">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>
+        </button>
     </div>
 </div>

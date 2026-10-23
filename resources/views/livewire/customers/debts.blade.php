@@ -19,7 +19,7 @@
                 <tr wire:key="debt-customer-{{ $customer->id }}"><td class="p-4"><strong>{{ $customer->name }}</strong>@if (! $customer->is_active)<span class="ml-2 text-xs text-adara-readable-muted">Archivada</span>@endif<p class="text-xs text-adara-readable-muted">{{ $customer->phone ?: 'Sin teléfono' }}</p></td><td class="p-4">{{ $customer->sales_count }}</td><td class="p-4">{{ \Carbon\CarbonImmutable::parse($customer->oldest_sale_at, 'UTC')->setTimezone('America/Argentina/Buenos_Aires')->format('d/m/Y') }}</td><td class="p-4 font-semibold text-adara-primary">{{ $ars((int) $customer->balance_cents) }}</td><td class="p-4 text-right"><button type="button" wire:click="selectCustomer({{ $customer->id }})" class="rounded-adara-control border border-adara-border px-3 py-2 font-semibold hover:text-adara-primary">Ver ventas</button></td></tr>
             @empty <tr><td colspan="5" class="p-8 text-center text-adara-readable-muted">{{ trim($search) === '' ? 'No hay clientas con deuda pendiente.' : 'No encontramos clientas con deuda para esa búsqueda.' }}</td></tr> @endforelse
         </tbody></table></div>
-        @if ($customers->hasPages())<div class="border-t border-adara-border p-4">{{ $customers->links() }}</div>@endif
+        @if ($customers->hasPages())<div class="border-t border-adara-border p-4">{{ $customers->links('components.adara.pagination', data: ['scrollTo' => false]) }}</div>@endif
     </section>
 
     @if ($selectedCustomer)

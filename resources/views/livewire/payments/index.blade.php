@@ -25,7 +25,7 @@
                     <tr wire:key="payment-{{ $payment->id }}"><td class="p-4 tabular-nums">{{ \Carbon\CarbonImmutable::parse($payment->paid_at, 'UTC')->setTimezone('America/Argentina/Buenos_Aires')->format('d/m/Y H:i') }}</td><td class="p-4">{{ $payment->customer_name ?: 'Consumidor final' }}</td><td class="p-4 font-semibold text-adara-primary">{{ $payment->sale_numbers ?: 'Sin venta vinculada' }}</td><td class="p-4">{{ $methods[$payment->method] ?? $payment->method }}@if ($payment->method === 'cash' && $payment->cash_change_cents > 0)<span class="block text-xs text-adara-readable-muted">Recibido {{ $ars((int) $payment->cash_tendered_cents) }} · Vuelto {{ $ars((int) $payment->cash_change_cents) }}</span>@endif</td><td class="p-4 font-semibold text-adara-success">{{ $ars((int) $payment->amount_cents) }}</td><td class="p-4">{{ $ars((int) $payment->commission_cents) }}</td></tr>
                 @empty <tr><td colspan="6" class="p-8 text-center text-adara-readable-muted">No hay cobros para las fechas y el medio elegidos.</td></tr> @endforelse
             </tbody></table></div>
-            @if ($payments->hasPages())<div class="border-t border-adara-border p-4">{{ $payments->links() }}</div>@endif
+            @if ($payments->hasPages())<div class="border-t border-adara-border p-4">{{ $payments->links('components.adara.pagination', data: ['scrollTo' => false]) }}</div>@endif
         </section>
     @endif
 </div>

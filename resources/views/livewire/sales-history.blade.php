@@ -79,7 +79,7 @@
         @endif
 
         <div class="flex flex-wrap items-center justify-between gap-2 border-t border-adara-border px-5 py-3 text-[11px] text-adara-readable-muted"><span>Mostrando {{ $sales->count() }} de {{ $sales->total() }} ventas</span><span>Importes históricos registrados en Adara</span></div>
-        @if ($sales->hasPages())<div class="border-t border-adara-border px-5 py-4">{{ $sales->links() }}</div>@endif
+        @if ($sales->hasPages())<div class="border-t border-adara-border px-5 py-4">{{ $sales->links('components.adara.pagination', data: ['scrollTo' => false]) }}</div>@endif
     </section>
 
     <x-adara.modal id="sale-detail" :title="$selectedSale ? 'Detalle de la venta '.$selectedSale->number : 'Detalle de la venta'" description="Comprobante interno de Adara Gestión · no fiscal" wide wire:ignore.self>

@@ -11,12 +11,16 @@ class PaginationLocalizationTest extends TestCase
     {
         app()->setLocale('es');
 
-        $paginator = new LengthAwarePaginator(range(1, 10), 20, 10, 1, ['path' => '/stock']);
+        $paginator = new LengthAwarePaginator(range(1, 10), 30, 10, 2, ['path' => '/stock', 'pageName' => 'stock-page']);
 
-        $html = $paginator->links()->toHtml();
+        $html = $paginator->links('components.adara.pagination', data: ['scrollTo' => false])->toHtml();
 
         $this->assertStringContainsString('Anterior', $html);
         $this->assertStringContainsString('Siguiente', $html);
+        $this->assertStringContainsString('Mostrando', $html);
+        $this->assertStringContainsString('aria-current="page"', $html);
+        $this->assertStringContainsString("nextPage('stock-page')", $html);
+        $this->assertStringContainsString('bg-adara-primary', $html);
         $this->assertStringNotContainsString('pagination.previous', $html);
         $this->assertStringNotContainsString('pagination.next', $html);
     }

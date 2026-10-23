@@ -8,7 +8,7 @@
         <div>
             <p class="text-[11px] font-extrabold uppercase tracking-[0.16em] text-adara-primary">Producto</p>
             <h1 class="mt-2 font-display text-[30px] font-semibold text-adara-ink">{{ $group->name }}</h1>
-            <p class="mt-1 text-[13px] text-adara-readable-muted">{{ $group->category?->name ?? 'Sin categoría' }} · {{ $group->suppliers->pluck('name')->join(', ') ?: 'Sin proveedores' }}</p>
+            <p class="mt-1 text-[13px] text-adara-readable-muted">{{ $group->category?->name ?? 'Sin categoría' }}@if ($group->subcategory) / {{ $group->subcategory->name }}@endif · {{ $group->suppliers->pluck('name')->join(', ') ?: 'Sin proveedores' }}</p>
         </div>
         <div class="flex flex-wrap gap-2"><a href="{{ route('products.index') }}" wire:navigate class="inline-flex min-h-11 items-center rounded-adara-control border border-adara-border bg-adara-surface px-4 text-sm font-semibold hover:bg-adara-primary-light">Volver a productos</a><x-adara.button x-on:click="$dispatch('adara:open', { id: 'product-edit' })" aria-haspopup="dialog" aria-controls="product-edit">Editar producto</x-adara.button></div>
     </header>
@@ -45,7 +45,7 @@
     <div class="grid gap-5 xl:grid-cols-[1.12fr_0.88fr]">
         <section class="rounded-adara-card border border-adara-border bg-adara-surface p-5 shadow-adara-panel sm:p-6" aria-labelledby="product-overview-title">
             <div class="flex items-center gap-5">
-                <span class="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-adara-primary-light text-4xl text-adara-primary" aria-hidden="true">✦</span>
+                @if ($group->images->firstWhere('is_primary', true))<img src="{{ route('products.images.show', $group->images->firstWhere('is_primary', true)) }}" alt="Foto principal de {{ $group->name }}" class="h-24 w-24 shrink-0 rounded-2xl object-cover">@else<span class="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-adara-primary-light text-4xl text-adara-primary" aria-hidden="true">✦</span>@endif
                 <div class="min-w-0"><x-adara.badge :tone="$activeVariant ? 'success' : 'neutral'">{{ $activeVariant ? 'Activo' : 'Sin presentaciones activas' }}</x-adara.badge><h2 id="product-overview-title" class="mt-2 font-display text-2xl font-semibold text-adara-ink">{{ $group->name }}</h2><p class="mt-1 text-xs leading-5 text-adara-readable-muted">{{ $group->description ?: 'Sin descripción' }}</p></div>
             </div>
             <div class="my-5 border-t border-adara-border"></div>
@@ -66,6 +66,37 @@
         </section>
     </div>
 
+    <section class="rounded-adara-card border border-adara-border bg-adara-surface p-5 shadow-adara-panel sm:p-6" aria-labelledby="product-photos-title">
+        <h2 id="product-photos-title" class="font-display text-xl font-semibold">Fotos del producto</h2>
+        <p class="mt-1 text-sm text-adara-readable-muted">Hasta cinco fotos JPG, PNG o WebP de 2 MB cada una. Adara guarda la versión que ocupa menos espacio.</p>
+        @if ($group->images->isEmpty())<p class="mt-4 rounded-adara-control bg-adara-background p-4 text-sm text-adara-readable-muted">Todavía no cargaste fotos. La primera que agregues será la portada.</p>@else
+            <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                @foreach ($group->images as $image)
+                    <div wire:key="photo-{{ $image->id }}" class="overflow-hidden rounded-adara-control border border-adara-border">
+                        <img src="{{ route('products.images.show', $image) }}" alt="Foto {{ $loop->iteration }} de {{ $group->name }}" class="aspect-square w-full object-cover">
+                        <div class="flex flex-wrap items-center gap-1 p-2">@if ($image->is_primary)<x-adara.badge tone="success">Portada</x-adara.badge>@else<x-adara.button variant="ghost" wire:click="makePrimaryPhoto({{ $image->id }})" wire:loading.attr="disabled" wire:target="makePrimaryPhoto">Usar de portada</x-adara.button>@endif<x-adara.button variant="ghost" wire:click="openPhotoRemoval({{ $image->id }})" wire:loading.attr="disabled" wire:target="openPhotoRemoval" aria-haspopup="dialog" aria-controls="photo-delete-confirm">Eliminar</x-adara.button></div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+        @if ($group->images->count() < 5)
+            <form wire:submit="savePhotos" class="mt-5 flex flex-wrap items-end gap-3"><div class="min-w-56 flex-1"><label for="detail-photos" class="block text-sm font-semibold">Agregar fotos</label><input id="detail-photos" type="file" wire:model="photos" accept="image/jpeg,image/png,image/webp" multiple class="mt-2 block w-full rounded-adara-control border border-adara-border bg-adara-surface p-3 text-sm file:mr-3 file:rounded-adara-control file:border-0 file:bg-adara-primary-light file:px-3 file:py-2 file:font-semibold file:text-adara-primary"><span wire:loading wire:target="photos" role="status" class="mt-1 block text-sm text-adara-readable-muted">Cargando fotos…</span>@error('photos')<p role="alert" class="mt-1 text-sm text-adara-danger">{{ $message }}</p>@enderror @error('photos.*')<p role="alert" class="mt-1 text-sm text-adara-danger">{{ $message }}</p>@enderror</div><x-adara.button type="submit" wire:loading.attr="disabled" wire:target="photos,savePhotos">Guardar fotos</x-adara.button></form>
+        @endif
+    </section>
+
+    <x-adara.modal id="photo-delete-confirm" title="Eliminar foto" description="Confirmá que querés quitar esta foto del producto." wire:ignore.self>
+        @if ($photoToDeleteId && ($photoToDelete = $group->images->firstWhere('id', $photoToDeleteId)))
+            <div class="flex items-center gap-4 rounded-adara-control border border-adara-border bg-adara-background p-3">
+                <img src="{{ route('products.images.show', $photoToDelete) }}" alt="Foto que se eliminará de {{ $group->name }}" class="h-20 w-20 shrink-0 rounded-adara-control object-cover">
+                <p class="text-sm text-adara-ink">Se eliminará esta foto de <strong>{{ $group->name }}</strong>. Esta acción no se puede deshacer.</p>
+            </div>
+        @endif
+        <x-slot:footer>
+            <x-adara.button variant="outline" wire:click="cancelPhotoRemoval">Cancelar</x-adara.button>
+            <x-adara.button variant="danger" wire:click="removePhoto" wire:loading.attr="disabled" wire:target="removePhoto">Eliminar foto</x-adara.button>
+        </x-slot:footer>
+    </x-adara.modal>
+
     <x-adara.modal id="product-edit" title="Editar producto" description="Actualizá los datos o agregá otra presentación." wide wire:ignore.self>
     <div class="grid gap-5 lg:grid-cols-2">
         <section class="rounded-adara-card border border-adara-border bg-adara-surface p-5 shadow-adara-panel sm:p-6" aria-labelledby="group-title">
@@ -75,10 +106,16 @@
             <form wire:submit="saveGroup" class="mt-5 flex flex-col gap-5">
                 <x-adara.input id="group-name" name="name" label="Nombre" wire:model="name" required />
                 <x-adara.textarea id="group-description" name="description" label="Descripción" wire:model="description" />
-                <x-adara.select id="group-category" name="category_id" label="Categoría" wire:model="categoryId">
+                <x-adara.select id="group-category" name="category_id" label="Categoría" wire:model.live="categoryId">
                     <option value="">Sin categoría</option>
                     @foreach ($categories as $category)
                         <option value="{{ $category->id }}">{{ $category->name }}{{ $category->is_active ? '' : ' (archivada)' }}</option>
+                    @endforeach
+                </x-adara.select>
+                <x-adara.select id="group-subcategory" name="subcategory_id" label="Subcategoría" wire:model="subcategoryId" :disabled="$categoryId === ''">
+                    <option value="">Sin subcategoría</option>
+                    @foreach ($subcategories as $subcategory)
+                        <option value="{{ $subcategory->id }}">{{ $subcategory->name }}{{ $subcategory->is_active ? '' : ' (archivada)' }}</option>
                     @endforeach
                 </x-adara.select>
                 <fieldset>

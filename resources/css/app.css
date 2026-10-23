@@ -21,8 +21,9 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
 @theme {
-    --color-adara-background: #F8F5F2;
+    --color-adara-background: #F1EAE8;
     --color-adara-surface: #FFFEFD;
+    --color-adara-popover: #FFF9F6;
     --color-adara-ink: #302936;
     --color-adara-muted: #8D818D;
     --color-adara-readable-muted: color-mix(in srgb, var(--color-adara-muted) 75%, var(--color-adara-ink));
@@ -48,6 +49,7 @@
 :root {
     --adara-background: var(--color-adara-background);
     --adara-surface: var(--color-adara-surface);
+    --adara-popover: var(--color-adara-popover);
     --adara-ink: var(--color-adara-ink);
     --adara-muted: var(--color-adara-muted);
     --adara-border: var(--color-adara-border);
@@ -151,6 +153,11 @@
         transform: rotate(180deg);
     }
 
+    [data-adara-select-trigger][aria-expanded='true'] {
+        border-color: var(--adara-primary);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--adara-primary) 15%, transparent);
+    }
+
     .adara-skeleton-line {
         position: relative;
         overflow: hidden;
@@ -179,6 +186,29 @@
 @keyframes adara-loading-glow {
     0%, 100% { opacity: 0.45; }
     50% { opacity: 1; }
+}
+
+.adara-quick-link {
+    display: block;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .adara-dashboard > .grid > section,
+    .adara-dashboard .adara-quick-link {
+        transition: transform 180ms ease-out, box-shadow 180ms ease-out, border-color 180ms ease-out;
+    }
+
+    .adara-dashboard > .grid > section:hover {
+        transform: translateY(-3px);
+        border-color: color-mix(in srgb, var(--adara-primary) 28%, var(--adara-border));
+        box-shadow: 0 18px 36px rgb(59 36 55 / 12%);
+    }
+
+    .adara-dashboard .adara-quick-link:hover {
+        transform: translateY(-2px);
+        border-color: color-mix(in srgb, var(--adara-primary) 35%, var(--adara-border));
+        box-shadow: 0 8px 18px rgb(59 36 55 / 9%);
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

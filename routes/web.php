@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductImageController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Middleware\EnsureActiveUser;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,8 @@ Route::middleware(['auth', EnsureActiveUser::class])->group(function (): void {
     Route::view('/', 'welcome')->name('home');
 
     Route::view('/productos', 'products.index')->name('products.index');
+    Route::get('/productos/imagenes/{image}', [ProductImageController::class, 'show'])
+        ->whereNumber('image')->name('products.images.show');
 
     Route::get('/productos/{product}', [ProductController::class, 'show'])
         ->whereNumber('product')->name('products.show');

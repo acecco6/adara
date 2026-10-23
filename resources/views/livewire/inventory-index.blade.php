@@ -50,7 +50,7 @@
                 </tbody>
             </table>
         </div>
-        @if ($variants->hasPages())<div class="border-t border-adara-border px-5 py-4">{{ $variants->links() }}</div>@endif
+        @if ($variants->hasPages())<div class="border-t border-adara-border px-5 py-4">{{ $variants->links('components.adara.pagination', data: ['scrollTo' => false]) }}</div>@endif
     </section>
 
     <section id="inventory-history" tabindex="-1" x-on:adara:inventory-history.window="$el.focus(); $el.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })" class="overflow-hidden rounded-adara-card border border-adara-border bg-adara-surface shadow-adara-panel" aria-labelledby="inventory-history-title">
@@ -77,7 +77,7 @@
                 </tbody>
             </table>
         </div>
-        @if ($movements->hasPages())<div class="border-t border-adara-border px-5 py-4">{{ $movements->links() }}</div>@endif
+        @if ($movements->hasPages())<div class="border-t border-adara-border px-5 py-4">{{ $movements->links('components.adara.pagination', data: ['scrollTo' => false]) }}</div>@endif
     </section>
 
     <x-adara.modal id="inventory-adjustment-form" title="Ajustar stock" description="Registrá la cantidad y el motivo. El saldo no puede quedar negativo." wire:ignore.self>

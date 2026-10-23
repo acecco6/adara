@@ -49,6 +49,6 @@
                 </tbody>
             </table>
         </div>
-        @if ($contacts->hasPages()) <div class="border-t border-adara-border px-5 py-4">{{ $contacts->links() }}</div> @endif
+        @if ($contacts->hasPages()) <div class="border-t border-adara-border px-5 py-4">{{ $contacts->links('components.adara.pagination', data: ['scrollTo' => false]) }}</div> @endif
     </section>
 </div>

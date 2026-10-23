@@ -15,6 +15,34 @@ function enhanceSelect(root) {
     let typed = '';
     let typedAt = 0;
 
+    function positionDropdown() {
+        const triggerBounds = trigger.getBoundingClientRect();
+        const dialog = root.closest('dialog[open]');
+        const dialogBounds = dialog?.getBoundingClientRect();
+        const topLimit = Math.max(8, dialogBounds?.top ?? 8) + 8;
+        const bottomLimit = Math.min(window.innerHeight - 8, dialogBounds?.bottom ?? window.innerHeight - 8) - 8;
+
+        if (triggerBounds.bottom < topLimit || triggerBounds.top > bottomLimit) {
+            close();
+            return;
+        }
+
+        const spaceBelow = bottomLimit - triggerBounds.bottom - 8;
+        const spaceAbove = triggerBounds.top - topLimit - 8;
+        const desiredHeight = Math.min(dropdown.scrollHeight, 256);
+        const placeAbove = spaceBelow < desiredHeight && spaceAbove > spaceBelow;
+        const availableHeight = Math.max(48, placeAbove ? spaceAbove : spaceBelow);
+
+        dropdown.style.position = 'fixed';
+        dropdown.style.left = `${triggerBounds.left}px`;
+        dropdown.style.width = `${triggerBounds.width}px`;
+        dropdown.style.top = placeAbove ? 'auto' : `${triggerBounds.bottom + 8}px`;
+        dropdown.style.bottom = placeAbove ? `${window.innerHeight - triggerBounds.top + 8}px` : 'auto';
+        dropdown.style.maxHeight = `${availableHeight}px`;
+        dropdown.style.marginTop = '0';
+        listbox.style.maxHeight = `${Math.max(40, availableHeight - (searchInput ? searchInput.parentElement.offsetHeight : 0) - 2)}px`;
+    }
+
     if (!select || select.multiple || !label || !custom || !trigger || !value || !listbox) {
         return;
     }
@@ -95,6 +123,9 @@ function enhanceSelect(root) {
             openControl = null;
         }
 
+        window.removeEventListener('resize', positionDropdown);
+        document.removeEventListener('scroll', positionDropdown, true);
+
         if (restoreFocus) {
             trigger.focus();
         }
@@ -142,6 +173,9 @@ function enhanceSelect(root) {
         buildOptions();
         filterOptions();
         dropdown.classList.remove('hidden');
+        positionDropdown();
+        window.addEventListener('resize', positionDropdown);
+        document.addEventListener('scroll', positionDropdown, true);
         trigger.setAttribute('aria-expanded', 'true');
         root.dataset.adaraOpen = 'true';
         openControl = { root, close };

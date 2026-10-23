@@ -4,11 +4,14 @@ namespace App\Livewire\Products;
 
 use App\Models\Category;
 use App\Models\ProductGroup;
+use App\Models\ProductImage;
 use App\Models\ProductVariant;
+use App\Models\Subcategory;
 use App\Models\Supplier;
 use App\Services\CatalogService;
 use App\Services\InitialStockService;
 use App\Services\Pricing\DecimalNumber;
+use App\Services\ProductImageService;
 use App\Services\StockAdjustmentService;
 use DomainException;
 use Illuminate\Contracts\View\View;
@@ -18,10 +21,14 @@ use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Livewire\WithFileUploads;
 use RangeException;
 
 class Detail extends Component
 {
+    use WithFileUploads;
+
     #[Locked]
     public int $groupId;
 
@@ -30,6 +37,14 @@ class Detail extends Component
     public string $description = '';
 
     public string $categoryId = '';
+
+    public string $subcategoryId = '';
+
+    /** @var array<int, TemporaryUploadedFile> */
+    public array $photos = [];
+
+    #[Locked]
+    public ?int $photoToDeleteId = null;
 
     /** @var array<int, int|string> */
     public array $supplierIds = [];
@@ -84,7 +99,13 @@ class Detail extends Component
         $this->name = $group->name;
         $this->description = $group->description ?? '';
         $this->categoryId = $group->category_id === null ? '' : (string) $group->category_id;
+        $this->subcategoryId = $group->subcategory_id === null ? '' : (string) $group->subcategory_id;
         $this->supplierIds = $group->suppliers()->pluck('suppliers.id')->all();
+    }
+
+    public function updatedCategoryId(): void
+    {
+        $this->subcategoryId = '';
     }
 
     public function saveGroup(CatalogService $catalog): void
@@ -93,11 +114,49 @@ class Detail extends Component
             'name' => $this->name,
             'description' => $this->description,
             'category_id' => $this->categoryId,
+            'subcategory_id' => $this->subcategoryId,
             'supplier_ids' => $this->supplierIds,
         ]);
         $this->resetErrorBag();
         $this->dispatch('adara:close', id: 'product-edit');
         $this->dispatch('adara:toast', tone: 'success', message: 'Producto actualizado.');
+    }
+
+    public function savePhotos(ProductImageService $images): void
+    {
+        $images->add($this->groupId, $this->photos);
+        $this->photos = [];
+        $this->resetErrorBag('photos');
+        $this->dispatch('adara:toast', tone: 'success', message: 'Fotos guardadas.');
+    }
+
+    public function makePrimaryPhoto(int $imageId, ProductImageService $images): void
+    {
+        $images->makePrimary($this->groupId, $imageId);
+        $this->dispatch('adara:toast', tone: 'success', message: 'Portada actualizada.');
+    }
+
+    public function openPhotoRemoval(int $imageId): void
+    {
+        $this->photoToDeleteId = ProductImage::query()->where('product_group_id', $this->groupId)->findOrFail($imageId)->id;
+        $this->dispatch('adara:open', id: 'photo-delete-confirm');
+    }
+
+    public function cancelPhotoRemoval(): void
+    {
+        $this->photoToDeleteId = null;
+        $this->dispatch('adara:close', id: 'photo-delete-confirm');
+    }
+
+    public function removePhoto(ProductImageService $images): void
+    {
+        if ($this->photoToDeleteId === null) {
+            return;
+        }
+
+        $images->remove($this->groupId, $this->photoToDeleteId);
+        $this->cancelPhotoRemoval();
+        $this->dispatch('adara:toast', tone: 'success', message: 'Foto eliminada.');
     }
 
     public function addVariant(CatalogService $catalog): void
@@ -302,7 +361,11 @@ class Detail extends Component
 
     public function render(): View
     {
-        $group = ProductGroup::with(['category', 'suppliers', 'variants' => fn ($query) => $query->orderBy('id'), 'variants.balance'])
+        $group = ProductGroup::with([
+            'category', 'subcategory', 'suppliers',
+            'images' => fn ($query) => $query->select('id', 'product_group_id', 'mime_type', 'position', 'is_primary')->orderBy('position')->orderBy('id'),
+            'variants' => fn ($query) => $query->orderBy('id'), 'variants.balance',
+        ])
             ->findOrFail($this->groupId);
         $movements = DB::table('stock_movements')
             ->join('product_variants', 'product_variants.id', '=', 'stock_movements.product_variant_id')
@@ -319,11 +382,16 @@ class Detail extends Component
         $categories = Category::query()->where('is_active', true)
             ->when($group->category_id !== null, fn ($query) => $query->orWhereKey($group->category_id))
             ->orderBy('name')->get();
+        $subcategories = Subcategory::query()->where('category_id', $this->categoryId)
+            ->where(function ($query) use ($group): void {
+                $query->where('is_active', true)
+                    ->when($group->subcategory_id !== null, fn ($query) => $query->orWhereKey($group->subcategory_id));
+            })->orderBy('name')->get();
         $suppliers = Supplier::query()->where('is_active', true)
             ->when($group->suppliers->isNotEmpty(), fn ($query) => $query->orWhereKey($group->suppliers->modelKeys()))
             ->orderBy('name')->get();
 
-        return view('livewire.products.detail', compact('group', 'movements', 'movementVariantIds', 'categories', 'suppliers'));
+        return view('livewire.products.detail', compact('group', 'movements', 'movementVariantIds', 'categories', 'subcategories', 'suppliers'));
     }
 
     private function variant(int $variantId): ProductVariant

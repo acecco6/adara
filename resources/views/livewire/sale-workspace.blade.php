@@ -1,4 +1,4 @@
-<div class="space-y-6">
+<div class="space-y-6 {{ $cart === [] ? '' : 'pb-24 lg:pb-0' }}">
     <header class="flex flex-wrap items-start justify-between gap-4">
         <div>
             <p class="mb-2 text-[10px] font-extrabold uppercase tracking-[0.16em] text-adara-primary">Operaciones / Ventas</p>
@@ -13,10 +13,6 @@
             <x-adara.button wire:click="startAnotherSale">Nueva venta</x-adara.button>
         @endif
     </header>
-
-    @if ($message)
-        <p role="alert" class="rounded-adara-control border border-adara-danger/25 bg-adara-danger-bg px-4 py-3 text-sm font-medium text-adara-danger">{{ $message }}</p>
-    @endif
 
         <div class="grid items-start gap-[18px] lg:grid-cols-[minmax(0,1fr)_300px] min-[1366px]:grid-cols-[minmax(0,1fr)_350px]" @if ($confirmedSaleId !== null) inert aria-hidden="true" @endif>
             <section class="min-w-0" aria-labelledby="sale-products-title">
@@ -45,9 +41,13 @@
                                 $tones = ['bg-adara-primary-light text-adara-primary', 'bg-adara-success-bg text-adara-success', 'bg-adara-warning-bg text-adara-warning', 'bg-[#e9ecf5] text-adara-primary'];
                                 $tone = $tones[$loop->index % count($tones)];
                             @endphp
-                            <button type="button" wire:key="sale-result-{{ $variant->id }}" wire:click="addVariant({{ $variant->id }})" class="group min-w-0 rounded-adara-card border border-adara-border bg-adara-surface p-4 text-left shadow-adara-panel transition duration-150 hover:-translate-y-0.5 hover:border-adara-primary/35" aria-label="Agregar {{ $variant->product_name }} {{ $variant->name }}">
-                                <span class="mb-[13px] flex h-[94px] items-center justify-center rounded-[13px] {{ $tone }}" aria-hidden="true">
-                                    <svg class="h-11 w-11" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 14h18v25H15z" stroke-linejoin="round"/><path d="M20 8h8v6h-8zM19 23h10v7H19z" stroke-linejoin="round"/><path d="M15 18h18"/></svg>
+                            <button type="button" wire:key="sale-result-{{ $variant->id }}" wire:click="addVariant({{ $variant->id }})" wire:loading.attr="disabled" wire:target="addVariant({{ $variant->id }})" class="group min-w-0 rounded-adara-card border border-adara-border bg-adara-surface p-4 text-left shadow-adara-panel transition duration-150 hover:-translate-y-0.5 hover:border-adara-primary/35 disabled:cursor-wait" aria-label="Agregar {{ $variant->product_name }} {{ $variant->name }}">
+                                <span class="mb-[13px] flex h-32 items-center justify-center overflow-hidden rounded-[13px] {{ $variant->primary_image_id !== null ? 'border border-adara-border bg-adara-surface' : $tone }}" aria-hidden="true">
+                                    @if ($variant->primary_image_id !== null)
+                                        <img src="{{ route('products.images.show', $variant->primary_image_id) }}" alt="" loading="lazy" decoding="async" class="h-full w-full object-contain">
+                                    @else
+                                        <svg class="h-11 w-11" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 14h18v25H15z" stroke-linejoin="round"/><path d="M20 8h8v6h-8zM19 23h10v7H19z" stroke-linejoin="round"/><path d="M15 18h18"/></svg>
+                                    @endif
                                 </span>
                                 <span class="flex items-start justify-between gap-2">
                                     <span class="min-w-0 truncate text-xs font-bold text-adara-ink">{{ $variant->product_name }}</span>
@@ -56,7 +56,7 @@
                                 <span class="mt-1 block truncate text-[11px] text-adara-readable-muted">{{ $variant->category_name ?: $variant->name }} · {{ $variant->sku }}</span>
                                 <span class="mt-[13px] flex items-center justify-between gap-2">
                                     <strong class="text-base text-adara-ink">$ {{ number_format((int) $variant->current_price_cents / 100, 2, ',', '.') }}</strong>
-                                    <span class="rounded-lg bg-adara-primary-light px-2.5 py-1.5 text-xs font-bold text-adara-primary group-hover:bg-adara-primary group-hover:text-white">+ Agregar</span>
+                                    <span class="rounded-lg bg-adara-primary-light px-2.5 py-1.5 text-xs font-bold text-adara-primary group-hover:bg-adara-primary group-hover:text-white"><span wire:loading.remove wire:target="addVariant({{ $variant->id }})">+ Agregar</span><span wire:loading wire:target="addVariant({{ $variant->id }})">Agregando…</span></span>
                                 </span>
                             </button>
                         @endforeach
@@ -64,7 +64,8 @@
                 @endif
             </section>
 
-            <aside class="min-w-0 rounded-adara-card border border-adara-border bg-adara-surface p-[22px] shadow-adara-panel lg:sticky lg:top-24 lg:self-start" aria-labelledby="sale-summary-title">
+            <aside class="min-w-0 rounded-adara-card border border-adara-border bg-adara-surface shadow-adara-panel lg:sticky lg:top-24 lg:flex lg:flex-col lg:self-start {{ $cart === [] ? '' : 'lg:max-h-[calc(100dvh-7rem)] lg:overflow-hidden' }}" aria-labelledby="sale-summary-title">
+                <div class="p-[22px] lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
                 <div class="mb-4 flex items-center justify-between gap-2">
                     <h2 id="sale-summary-title" class="text-base font-bold text-adara-ink">Resumen de venta</h2>
                     @php $unitCount = array_sum(array_map(fn ($line) => (int) $line['quantity'], $cart)); @endphp
@@ -107,6 +108,7 @@
                 @endif
                 @if ($quoteError)<p role="alert" class="mt-2 text-xs font-semibold text-adara-danger">{{ $quoteError }}</p>@endif
 
+                @if ($cart !== [])
                 <div class="my-[19px] border-t border-adara-border"></div>
                 <dl class="space-y-3 text-xs text-adara-readable-muted">
                     <div class="flex justify-between gap-2"><dt>Subtotal</dt><dd class="font-bold text-adara-ink">{{ $quote ? '$ '.number_format($quote['subtotal'] / 100, 2, ',', '.') : '—' }}</dd></div>
@@ -122,11 +124,21 @@
                     </div>
                 </details>
                 <div class="my-[19px] border-t border-adara-border"></div>
-                <div class="flex items-center justify-between gap-2"><strong class="text-sm text-adara-ink">Total a cobrar</strong><strong class="text-[27px] font-extrabold tracking-tight text-adara-ink">{{ $quote ? '$ '.number_format($quote['total'] / 100, 2, ',', '.') : '$ 0,00' }}</strong></div>
+                <div class="rounded-adara-control bg-adara-primary-light/45 p-3">
+                    <strong class="block text-sm text-adara-ink">Total a cobrar</strong>
+                    <strong class="mt-1 flex items-baseline gap-1.5 whitespace-nowrap font-display text-[27px] font-semibold tracking-tight tabular-nums text-adara-ink">
+                        @if ($quote)
+                            <span>$</span><span>{{ number_format($quote['total'] / 100, 2, ',', '.') }}</span>
+                        @else
+                            <span>—</span>
+                        @endif
+                    </strong>
+                </div>
 
                 <div class="mt-5 space-y-3" aria-labelledby="sale-payments-title">
-                    <div class="flex items-center justify-between gap-2"><h3 id="sale-payments-title" class="text-xs font-bold text-adara-ink">Medio de pago</h3><button type="button" wire:click="addPayment" class="text-xs font-bold text-adara-primary hover:underline">+ Agregar cobro</button></div>
+                    <h3 id="sale-payments-title" class="text-sm font-bold text-adara-ink">Medio de pago</h3>
                     @if ($payments === [])<p class="text-xs text-adara-readable-muted">Agregá un cobro o elegí una clienta para dejar saldo pendiente.</p>@endif
+                    <button type="button" wire:click="addPayment" wire:loading.attr="disabled" wire:target="addPayment" aria-label="Agregar un cobro a esta venta" class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-adara-control border border-adara-primary/40 bg-adara-surface px-3 text-sm font-semibold text-adara-primary transition-colors duration-150 hover:border-adara-primary hover:bg-adara-primary-light disabled:cursor-not-allowed disabled:opacity-55"><span aria-hidden="true" class="text-lg leading-none">+</span> Agregar cobro</button>
                     @foreach ($payments as $position => $payment)
                         <div wire:key="sale-payment-{{ $position }}" class="space-y-3 rounded-adara-control border border-adara-border bg-adara-background/50 p-3">
                             <div class="flex items-center justify-between"><strong class="text-xs text-adara-ink">Cobro {{ $position + 1 }}</strong><button type="button" wire:click="removePayment({{ $position }})" class="text-xs font-semibold text-adara-danger">Quitar</button></div>
@@ -155,7 +167,19 @@
                     @endif
                 </div>
                 @if ($quote && $quote['below_cost'])<p role="alert" class="mt-3 rounded-adara-control bg-adara-danger-bg p-3 text-xs font-semibold text-adara-danger">El total queda debajo del costo de reposición y requiere confirmación adicional.</p>@endif
-                <x-adara.button class="mt-[17px] w-full" wire:click="reviewSale" wire:loading.attr="disabled" wire:target="reviewSale" :disabled="$cart === [] || $quote === null">Confirmar venta</x-adara.button>
+                @endif
+                </div>
+                @if ($cart !== [])
+                    <div class="fixed inset-x-0 bottom-0 z-30 border-t border-adara-border bg-adara-surface px-4 py-3 shadow-lg lg:static lg:shrink-0 lg:px-[22px] lg:py-4 lg:shadow-none">
+                        <div class="mx-auto flex max-w-[440px] items-center justify-between gap-3 lg:max-w-none lg:flex-col lg:items-stretch">
+                            <div class="min-w-0 text-xs text-adara-readable-muted lg:flex lg:items-center lg:justify-between">
+                                <span class="block">Total a cobrar</span>
+                                <strong class="block whitespace-nowrap text-sm text-adara-ink">{{ $quote ? '$ '.number_format($quote['total'] / 100, 2, ',', '.') : '—' }}</strong>
+                            </div>
+                            <x-adara.button class="shrink-0 lg:w-full" wire:click="reviewSale" wire:loading.attr="disabled" wire:target="reviewSale" :disabled="$quote === null">Revisar venta</x-adara.button>
+                        </div>
+                    </div>
+                @endif
             </aside>
         </div>
     <x-adara.modal id="sale-discard" title="¿Descartar esta venta?" description="No se registrará ninguna operación.">
@@ -182,7 +206,6 @@
                         <p wire:key="sale-review-payment-{{ $loop->index }}" class="text-xs text-adara-readable-muted">{{ ['cash' => 'Efectivo', 'transfer' => 'Transferencia', 'mercado_pago' => 'Mercado Pago', 'card' => 'Tarjeta'][$payment['method']] ?? $payment['method'] }}: $ {{ number_format($payment['amount_cents'] / 100, 2, ',', '.') }}@if ($payment['method'] === 'cash' && $payment['cash_change_cents'] > 0) · Vuelto: $ {{ number_format($payment['cash_change_cents'] / 100, 2, ',', '.') }}@endif</p>
                     @endforeach
                     @if ($review['quote']['below_cost'])<label class="flex items-start gap-3 rounded-adara-control border border-adara-danger p-3 text-adara-danger"><input type="checkbox" wire:model.change="acceptBelowCost" class="mt-1 accent-adara-primary"><span>Confirmo que esta venta queda debajo del costo de reposición.</span></label>@endif
-                    @if ($message)<p role="alert" class="font-semibold text-adara-danger">{{ $message }}</p>@endif
                 </div>
             @endif
             <x-slot:footer><x-adara.button variant="ghost" x-on:click="close()">Cancelar</x-adara.button><x-adara.button wire:click="confirmSale" wire:loading.attr="disabled" wire:target="confirmSale" :disabled="$review === [] || ($review['quote']['below_cost'] && ! $acceptBelowCost)"><span wire:loading.remove wire:target="confirmSale">Registrar venta</span><span wire:loading wire:target="confirmSale">Guardando...</span></x-adara.button></x-slot:footer>
