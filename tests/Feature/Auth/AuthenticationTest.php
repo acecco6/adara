@@ -148,14 +148,14 @@ class AuthenticationTest extends TestCase
         );
     }
 
-    public function test_livewire_update_upload_and_preview_endpoints_are_private(): void
+    public function test_livewire_updates_require_valid_request_and_file_endpoints_are_private(): void
     {
         $router = app('router');
         $updateRoute = collect($router->getRoutes()->getRoutes())->first(fn ($route) => $route->getName() === 'livewire.update');
         $uploadRoute = $router->getRoutes()->getByName('livewire.upload-file');
         $previewRoute = $router->getRoutes()->getByName('livewire.preview-file');
 
-        $this->post('/'.$updateRoute->uri(), [])->assertRedirect(route('login'));
+        $this->post('/'.$updateRoute->uri(), [])->assertNotFound();
         $this->post('/'.$uploadRoute->uri(), [])->assertRedirect(route('login'));
         $this->get('/'.str_replace('{filename}', 'test', $previewRoute->uri()))->assertRedirect(route('login'));
         $this->get('/storage/archivo-privado')->assertRedirect(route('login'));

@@ -30,6 +30,8 @@ class Index extends Component
 
     public string $address = '';
 
+    public bool $publicCatalogEnabled = false;
+
     /** @var array<string, mixed>|null */
     #[Locked]
     public ?array $pricePreview = null;
@@ -41,9 +43,10 @@ class Index extends Component
     {
         $this->globalMarkup = (string) DB::table('pricing_settings')->where('id', 1)->value('global_markup_decimal');
         $business = DB::table('business_settings')->where('id', 1)->first();
-        $this->businessName = $business?->business_name ?? 'Adara Gestión';
-        $this->phone = $business?->phone ?? '';
-        $this->address = $business?->address ?? '';
+        $this->businessName = $business->business_name;
+        $this->phone = $business->phone ?? '';
+        $this->address = $business->address ?? '';
+        $this->publicCatalogEnabled = (bool) $business->public_catalog_enabled;
     }
 
     public function updated(string $property): void
@@ -116,7 +119,8 @@ class Index extends Component
         $this->pricePreview = null;
         $this->globalMarkup = (string) DB::table('pricing_settings')->where('id', 1)->value('global_markup_decimal');
         if ($this->selectedVariantId !== null) {
-            $this->variantMarkup = ProductVariant::query()->find($this->selectedVariantId)?->markup_override_decimal ?? '';
+            $variant = ProductVariant::query()->find($this->selectedVariantId);
+            $this->variantMarkup = $variant === null ? '' : ($variant->markup_override_decimal ?? '');
         }
         $this->dispatch('adara:close', id: 'price-change-review');
         $this->dispatch('adara:toast', tone: 'success', message: 'Recargo y precios actualizados. Las ventas anteriores conservan sus importes.');
@@ -139,6 +143,17 @@ class Index extends Component
             'updated_at' => now(),
         ]);
         $this->dispatch('adara:toast', tone: 'success', message: 'Datos del negocio guardados.');
+    }
+
+    public function togglePublicCatalog(): void
+    {
+        $enabled = ! (bool) DB::table('business_settings')->where('id', 1)->value('public_catalog_enabled');
+        DB::table('business_settings')->where('id', 1)->update([
+            'public_catalog_enabled' => $enabled,
+            'updated_at' => now(),
+        ]);
+        $this->publicCatalogEnabled = $enabled;
+        $this->dispatch('adara:toast', tone: 'success', message: $enabled ? 'Catálogo público activado.' : 'Catálogo público desactivado.');
     }
 
     public function render(): View

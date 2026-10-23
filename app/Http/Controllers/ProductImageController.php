@@ -7,6 +7,16 @@ use Illuminate\Http\Response;
 
 class ProductImageController extends Controller
 {
+    public function showPublic(ProductImage $image): Response
+    {
+        abort_unless($image->is_primary && $image->group()->whereHas('variants', fn ($variants) => $variants->where('is_active', true))->exists(), 404);
+
+        $response = $this->show($image);
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
+    }
+
     public function show(ProductImage $image): Response
     {
         $bytes = $image->content_bytes ?? base64_decode($image->content_base64 ?? '', true);

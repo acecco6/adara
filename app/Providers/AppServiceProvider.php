@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Http\Middleware\EnsureActiveUser;
+use App\Http\Middleware\EnsurePublicCatalogEnabled;
 use Carbon\CarbonImmutable;
 use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Support\Facades\Date;
@@ -31,12 +32,13 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
 
         Livewire::setUpdateRoute(function ($handle, string $path) {
-            return Route::post($path, $handle)->middleware('auth');
+            return Route::post($path, $handle);
         });
+
+        Livewire::addPersistentMiddleware([EnsureActiveUser::class, EnsurePublicCatalogEnabled::class]);
 
         Event::listen(RouteMatched::class, function (RouteMatched $event): void {
             if (in_array($event->route->getName(), [
-                'livewire.update',
                 'livewire.upload-file',
                 'livewire.preview-file',
                 'storage.local',

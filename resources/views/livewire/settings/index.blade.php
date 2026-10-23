@@ -60,6 +60,19 @@
                     <x-adara.button wire:click="saveBusiness" wire:loading.attr="disabled" wire:target="saveBusiness">Guardar datos</x-adara.button>
                 </div>
             </section>
+            <section class="rounded-adara-card border border-adara-border bg-adara-surface p-5 shadow-adara-panel sm:p-6" aria-labelledby="public-catalog-title">
+                <h2 id="public-catalog-title" class="font-display text-xl font-semibold">Catálogo público</h2>
+                <p class="mt-2 text-xs leading-5 text-adara-readable-muted">Permití ver los productos activos y sus precios sin iniciar sesión. El acceso funciona desde el servidor local de Adara.</p>
+                <div class="mt-4 flex flex-wrap items-center gap-3">
+                    <button type="button" wire:click="togglePublicCatalog" wire:loading.attr="disabled" wire:target="togglePublicCatalog" aria-pressed="{{ $publicCatalogEnabled ? 'true' : 'false' }}" class="inline-flex min-h-11 items-center rounded-adara-control px-4 text-sm font-semibold text-white transition-colors {{ $publicCatalogEnabled ? 'bg-adara-success' : 'bg-adara-primary' }}">
+                        {{ $publicCatalogEnabled ? 'Desactivar catálogo público' : 'Activar catálogo público' }}
+                    </button>
+                    <span role="status" class="text-xs font-semibold {{ $publicCatalogEnabled ? 'text-adara-success' : 'text-adara-readable-muted' }}">{{ $publicCatalogEnabled ? 'Activo' : 'Desactivado' }}</span>
+                </div>
+                @if ($publicCatalogEnabled)
+                    <a href="{{ route('catalog.public') }}" target="_blank" rel="noopener" class="mt-4 inline-flex min-h-10 items-center text-sm font-semibold text-adara-primary hover:underline">Abrir catálogo público ↗</a>
+                @endif
+            </section>
             <section class="rounded-adara-card border border-adara-border bg-adara-surface p-5 shadow-adara-panel sm:p-6" aria-labelledby="price-help-title">
                 <h2 id="price-help-title" class="font-display text-xl font-semibold">¿Cómo se calcula un precio?</h2>
                 <div class="mt-4 rounded-adara-control bg-adara-primary-light p-4 text-sm leading-6"><strong>Costo de reposición</strong> = último costo recibido, con envío asignado.<br><strong>Precio de catálogo</strong> = costo × (1 + recargo / 100), redondeado hacia arriba a $100.<br><strong>Margen bruto por unidad</strong> = precio − costo histórico.</div>

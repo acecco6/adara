@@ -1,4 +1,4 @@
-@props(['id', 'label', 'name' => null, 'hint' => null, 'error' => null, 'required' => false, 'searchable' => false, 'searchPlaceholder' => null])
+@props(['id', 'label', 'name' => null, 'hint' => null, 'error' => null, 'required' => false, 'searchable' => false, 'searchPlaceholder' => null, 'inlineDropdown' => false])
 
 @php
     $fieldName = $name ?? $id;
@@ -9,7 +9,7 @@
     ]));
 @endphp
 
-<div data-adara-select-root class="relative flex min-w-0 flex-col gap-2">
+<div data-adara-select-root @if ($inlineDropdown) data-adara-select-inline @endif class="relative flex min-w-0 flex-col gap-2">
     <label id="{{ $id }}-label" for="{{ $id }}" class="text-sm font-semibold text-adara-ink">
         {{ $label }}
         @if ($required)

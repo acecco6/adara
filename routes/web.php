@@ -6,7 +6,18 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductImageController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Middleware\EnsureActiveUser;
+use App\Http\Middleware\EnsurePublicCatalogEnabled;
+use App\Livewire\PublicCatalog;
+use App\Livewire\PublicProductDetail;
 use Illuminate\Support\Facades\Route;
+
+Route::middleware(EnsurePublicCatalogEnabled::class)->group(function (): void {
+    Route::livewire('/catalogo', PublicCatalog::class)->name('catalog.public');
+    Route::get('/catalogo/imagenes/{image}', [ProductImageController::class, 'showPublic'])
+        ->whereNumber('image')->name('catalog.images.show');
+    Route::livewire('/catalogo/{variant}', PublicProductDetail::class)
+        ->whereNumber('variant')->name('catalog.product.show');
+});
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');

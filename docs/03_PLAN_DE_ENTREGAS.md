@@ -22,7 +22,7 @@ No confundir «servidor responde» con «sistema terminado».
 | 2 — Catálogo e inventario | T07–T11 | fase 1 | catálogo/producto/categorías/stock | tablas + acciones + movimientos | alta/edición/consulta con tests |
 | 3 — Proveedores y compras | T12–T15 | fase 2 | pedido/recepción/detalle | flete + valoración + transacciones | compra completa, luego parcial |
 | 4 — Ventas | T16–T20 | fase 3 | nueva venta, historial, modal confirmación | stock debitado, snapshots, anulaciones | venta E2E + transacciones + tests |
-| 5 — Datos y reportes | T21–T24 | fase 4 | dashboard, reportes, ajustes; T21 sujeto a nueva necesidad | exportación y reporting | métricas consistentes y exportables |
+| 5 — Datos y reportes | T21–T24A | fase 4 | dashboard, reportes, ajustes y catálogo público; T21 sujeto a nueva necesidad | exportación y reporting | métricas consistentes y catálogo visible solo al activarlo |
 | 6 — Respaldos / Mac | T25–T29 | fases anteriores | backups, ayuda, pulido | snapshot, restauración, release | app usable en Mac offline, backup recuperable |
 
 **Dependencia crítica:** no implementar «Ganancia histórica» en reportes sin primero guardar `sale_items.cost_total_snapshot_cents`. No implementar «Recepción» sin prorrateo en centavos resuelto.
@@ -72,6 +72,7 @@ No confundir «servidor responde» con «sistema terminado».
 - [x] **T22 — Reportes económicos**: KPI por fecha efectiva de ventas, anulaciones, cobros, reintegros, comisiones y gastos; margen con costo histórico, saldos actuales diferenciados y exportación CSV protegida contra fórmulas. **Aceptación:** cifras reconciliadas con ventas y costos.
 - [x] **T23 — Dashboard y gráficos**: Chart.js local, indicadores reales, alertas por mínimo de SKU, últimas ventas, accesos y filtros de período; sin datos ficticios. **Aceptación:** sin ventas ≠ números inventados.
 - [x] **T24 — Configuración**: datos del negocio validados, recargo general y particular por presentación con vista previa de precios, confirmación idempotente e historial de cambios. La pantalla explica costo, precio, recargo, redondeo fijo a ARS 100 y mínimo de stock por SKU. **Aceptación:** pruebas aisladas verifican que cambiar el recargo general respeta overrides, que los precios vigentes se recalculan con aritmética exacta y que las ventas confirmadas conservan precio/costo históricos. El redondeo y la moneda no son editables por las reglas aprobadas; preferencias de respaldos y otras opciones visuales quedan para sus flujos propios.
+- [x] **T24A — Catálogo público local**: Configuración activa o desactiva una vista sin inicio de sesión, apagada por defecto. Expone solo presentaciones activas, nombre, categoría, subcategoría, foto y precio vigente; búsqueda, filtros, orden ascendente/descendente, paginación y detalle responsive. No expone costo, stock, proveedores ni datos de clientas. Las rutas y fotos devuelven 404 al desactivar. **Aceptación:** pruebas de acceso anónimo, interruptor, filtros, orden, archivo y fotos; funcionamiento limitado al servidor local configurado, sin publicación en Internet.
 
 ### Fase 6 — Respaldo y despliegue Mac
 
