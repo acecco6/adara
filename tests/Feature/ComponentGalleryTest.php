@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ComponentGalleryTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_gallery_shows_accessible_field_errors_and_content_states(): void
     {
         $this->withoutVite();

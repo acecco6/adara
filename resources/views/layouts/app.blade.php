@@ -49,8 +49,16 @@
                             <span class="hidden sm:inline">@yield('section', 'General') <span aria-hidden="true">/</span> </span><strong class="font-semibold text-adara-ink">@yield('page', 'Inicio')</strong>
                         </nav>
                     </div>
-                    <span class="shrink-0 font-display text-lg font-bold text-adara-primary lg:hidden">adara.</span>
-                    <span class="hidden text-xs font-semibold text-adara-readable-muted lg:block">Adara Gestión</span>
+                    <div class="flex shrink-0 items-center gap-3">
+                        <span class="hidden max-w-40 truncate text-xs font-medium text-adara-readable-muted xl:block">{{ auth()->user()->name }}</span>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" aria-label="Cerrar sesión" class="inline-flex min-h-10 items-center rounded-adara-control border border-adara-border bg-adara-surface px-3 text-xs font-semibold text-adara-ink transition-colors duration-150 hover:border-adara-primary hover:text-adara-primary sm:px-4 sm:text-sm">
+                                <span class="sm:hidden">Salir</span>
+                                <span class="hidden sm:inline">Cerrar sesión</span>
+                            </button>
+                        </form>
+                    </div>
                 </header>
 
                 <main id="contenido" class="mx-auto w-full max-w-[1520px] px-4 py-7 sm:px-6 lg:px-[38px] lg:py-8" tabindex="-1">
