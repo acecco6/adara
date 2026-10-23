@@ -48,7 +48,7 @@ class PublicCatalogTest extends TestCase
         auth()->logout();
 
         $this->get(route('catalog.public'))->assertOk()->assertSee('Crema visible')->assertDontSee('Crema archivada')
-            ->assertSee("Livewire.dispatch('public-product-detail-load', { variantId: {$visibleVariant->id} })", false)
+            ->assertSee('wire:click="openProductDetail('.$visibleVariant->id.')"', false)
             ->assertSee('public-product-detail-reset', false)
             ->assertDontSee('$wire.resetProduct()', false);
         $this->get(route('catalog.product.show', $visibleVariant))->assertOk()->assertSee('Crema visible')->assertSee('$ 14.500');
@@ -114,10 +114,12 @@ class PublicCatalogTest extends TestCase
         Livewire::test(PublicCatalog::class)
             ->set('selectedCategory', (string) $category->id)
             ->assertSee('Crema de noche')
-            ->assertSee('variantId: '.$variant->id, false);
+            ->call('openProductDetail', $variant->id)
+            ->assertDispatched('public-product-detail-load', variantId: $variant->id);
 
         Livewire::test(PublicCatalogProductDetail::class)
             ->dispatch('public-product-detail-load', variantId: $variant->id)
+            ->assertDispatched('adara:open', id: 'public-product-detail')
             ->assertSet('variantId', $variant->id)
             ->assertSee('Crema de noche')
             ->assertSee('Frasco 50 ml')

@@ -1,4 +1,5 @@
-<style>
+<div class="min-h-dvh bg-[linear-gradient(135deg,#fffaf7_0%,#f7f0ed_58%,#fffaf7_100%)]">
+    <style>
     @media (prefers-reduced-motion: no-preference) {
         .public-catalog-card {
             transition: transform 280ms cubic-bezier(0.2, 0.75, 0.25, 1), border-color 280ms ease, box-shadow 280ms ease;
@@ -40,8 +41,6 @@
         }
     }
 </style>
-
-<div class="min-h-dvh bg-[linear-gradient(135deg,#fffaf7_0%,#f7f0ed_58%,#fffaf7_100%)]">
     <header class="border-b border-adara-border/70 bg-adara-surface/95">
         <div class="mx-auto flex h-[72px] max-w-[1540px] items-center justify-between px-5 sm:px-8 lg:px-12">
             <span class="text-[26px] font-semibold tracking-[0.18em] text-adara-primary sm:text-[30px]">ADARA</span>
@@ -121,7 +120,13 @@
                                 Filtros
                             </summary>
                             <div class="absolute left-0 z-20 mt-2 w-[min(354px,calc(100vw-40px))] space-y-4 rounded-adara-card border border-adara-border bg-adara-surface p-5 shadow-xl">
-                                <h3 class="font-display text-xl">Filtrar productos</h3>
+                                <div class="flex items-center justify-between gap-3">
+                                    <h3 class="font-display text-xl">Filtrar productos</h3>
+                                    <button type="button" x-on:click="$el.closest('details').open = false" aria-label="Cerrar filtros" class="inline-flex min-h-9 items-center gap-2 rounded-adara-control px-2 text-sm font-semibold text-adara-primary hover:bg-adara-primary-light">
+                                        <span>Cerrar</span>
+                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+                                    </button>
+                                </div>
                                 <x-adara.select id="public-category-mobile" name="selectedCategory" label="Categoría" wire:model.live="selectedCategory">
                                         <option value="">Todas las categorías</option>
                                         @foreach ($categories as $category)
@@ -201,7 +206,7 @@
                                         </p>
                                         <div class="mt-auto pt-4">
                                             <div class="border-t border-adara-border pt-4">
-                                                <button type="button" x-on:click="window.dispatchEvent(new CustomEvent('adara:open', { detail: { id: 'public-product-detail' } })); Livewire.dispatch('public-product-detail-load', { variantId: {{ $product->id }} })" aria-label="Ver detalle de {{ $product->group->name }}" class="inline-flex min-h-8 items-center gap-2 text-sm font-semibold text-adara-primary hover:underline">Ver detalle <span aria-hidden="true" class="public-catalog-card__arrow text-xl leading-none">→</span></button>
+                                                <button type="button" wire:click="openProductDetail({{ $product->id }})" aria-label="Ver detalle de {{ $product->group->name }}" class="inline-flex min-h-8 items-center gap-2 text-sm font-semibold text-adara-primary hover:underline">Ver detalle <span aria-hidden="true" class="public-catalog-card__arrow text-xl leading-none">→</span></button>
                                             </div>
                                         </div>
                                     </div>

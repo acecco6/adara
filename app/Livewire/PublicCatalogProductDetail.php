@@ -38,7 +38,7 @@ class PublicCatalogProductDetail extends Component
             $this->loadError = 'No pudimos cargar este producto. Puede que ya no esté disponible.';
         }
 
-        $this->dispatch('adara:detail-loaded', id: 'public-product-detail');
+        $this->dispatch('adara:open', id: 'public-product-detail');
     }
 
     public function render(): View
