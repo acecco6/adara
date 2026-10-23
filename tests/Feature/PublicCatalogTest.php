@@ -48,12 +48,14 @@ class PublicCatalogTest extends TestCase
         auth()->logout();
 
         $this->get(route('catalog.public'))->assertOk()->assertSee('Crema visible')->assertDontSee('Crema archivada')
-            ->assertSee('wire:click="openProductDetail('.$visibleVariant->id.')"', false)
+            ->assertSee("wire:click=\"\$dispatchTo('public-catalog-product-detail', 'public-product-detail-load', { variantId: {$visibleVariant->id} })\"", false)
             ->assertSee('public-product-detail-reset', false)
             ->assertDontSee('$wire.resetProduct()', false);
         $this->get(route('catalog.product.show', $visibleVariant))->assertOk()->assertSee('Crema visible')->assertSee('$ 14.500');
         $this->get(route('catalog.product.show', $archivedVariant))->assertNotFound();
-        $this->get(route('catalog.images.show', $visibleImage))->assertOk()->assertHeader('Content-Type', 'image/png');
+        $this->get(route('catalog.images.show', $visibleImage))->assertOk()
+            ->assertHeader('Content-Type', 'image/png')
+            ->assertHeader('Cache-Control', 'max-age=300, private');
         $this->get(route('catalog.images.show', $archivedImage))->assertNotFound();
 
         $this->actingAs(User::factory()->create());
@@ -110,12 +112,13 @@ class PublicCatalogTest extends TestCase
             'name' => 'Frasco 50 ml',
             'current_price_cents' => 2250000,
         ]);
+        $archivedGroup = ProductGroup::factory()->create(['name' => 'Producto archivado']);
+        $archivedVariant = ProductVariant::factory()->for($archivedGroup, 'group')->create(['is_active' => false]);
 
         Livewire::test(PublicCatalog::class)
             ->set('selectedCategory', (string) $category->id)
             ->assertSee('Crema de noche')
-            ->call('openProductDetail', $variant->id)
-            ->assertDispatched('public-product-detail-load', variantId: $variant->id);
+            ->assertSee("\$dispatchTo('public-catalog-product-detail', 'public-product-detail-load', { variantId: {$variant->id} })", false);
 
         Livewire::test(PublicCatalogProductDetail::class)
             ->dispatch('public-product-detail-load', variantId: $variant->id)
@@ -128,6 +131,11 @@ class PublicCatalogTest extends TestCase
             ->dispatch('public-product-detail-reset')
             ->assertSet('variantId', null)
             ->assertDontSee('Crema de noche');
+
+        Livewire::test(PublicCatalogProductDetail::class)
+            ->dispatch('public-product-detail-load', variantId: $archivedVariant->id)
+            ->assertSee('No pudimos cargar este producto')
+            ->assertDontSee('Producto archivado');
     }
 
     public function test_guest_can_update_public_catalog_over_livewire_http_route(): void

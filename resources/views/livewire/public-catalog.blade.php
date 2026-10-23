@@ -206,7 +206,7 @@
                                         </p>
                                         <div class="mt-auto pt-4">
                                             <div class="border-t border-adara-border pt-4">
-                                                <button type="button" wire:click="openProductDetail({{ $product->id }})" aria-label="Ver detalle de {{ $product->group->name }}" class="inline-flex min-h-8 items-center gap-2 text-sm font-semibold text-adara-primary hover:underline">Ver detalle <span aria-hidden="true" class="public-catalog-card__arrow text-xl leading-none">→</span></button>
+                                                <button type="button" wire:click="$dispatchTo('public-catalog-product-detail', 'public-product-detail-load', { variantId: {{ $product->id }} })" aria-label="Ver detalle de {{ $product->group->name }}" class="inline-flex min-h-8 items-center gap-2 text-sm font-semibold text-adara-primary hover:underline">Ver detalle <span aria-hidden="true" class="public-catalog-card__arrow text-xl leading-none">→</span></button>
                                             </div>
                                         </div>
                                     </div>

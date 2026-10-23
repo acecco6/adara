@@ -52,11 +52,6 @@ class PublicCatalog extends Component
         $this->resetPage();
     }
 
-    public function openProductDetail(int $variantId): void
-    {
-        $this->dispatch('public-product-detail-load', variantId: $variantId);
-    }
-
     public function render(): View
     {
         abort_unless((bool) DB::table('business_settings')->where('id', 1)->value('public_catalog_enabled'), 404);

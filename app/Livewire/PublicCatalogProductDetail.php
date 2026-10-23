@@ -26,17 +26,8 @@ class PublicCatalogProductDetail extends Component
     #[On('public-product-detail-load')]
     public function loadProduct(int $variantId): void
     {
-        abort_unless((bool) DB::table('business_settings')->where('id', 1)->value('public_catalog_enabled'), 404);
-
         $this->loadError = '';
-        $this->variantId = ProductVariant::query()
-            ->where('is_active', true)
-            ->whereKey($variantId)
-            ->value('id');
-
-        if ($this->variantId === null) {
-            $this->loadError = 'No pudimos cargar este producto. Puede que ya no esté disponible.';
-        }
+        $this->variantId = $variantId;
 
         $this->dispatch('adara:open', id: 'public-product-detail');
     }
