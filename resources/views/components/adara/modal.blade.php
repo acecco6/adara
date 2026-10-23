@@ -12,6 +12,7 @@
             if (!this.$refs.dialog.open) {
                 this.$refs.dialog.showModal();
             }
+            this.$refs.dialog.scrollTop = 0;
             this.$refs.dialog.focus();
             this.$refs.dialog.animate([
                 { opacity: 0, transform: 'translateY(12px) scale(.985)' },
