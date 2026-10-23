@@ -4,7 +4,12 @@
         $buttonClass = 'inline-flex min-h-10 min-w-10 items-center justify-center rounded-adara-control border border-adara-border bg-adara-surface px-3 text-sm font-semibold text-adara-ink transition-colors hover:border-adara-primary hover:bg-adara-primary-light hover:text-adara-primary disabled:cursor-wait disabled:opacity-60';
     @endphp
 
-    <nav role="navigation" aria-label="Paginación" class="flex flex-wrap items-center justify-between gap-3">
+    <nav
+        role="navigation"
+        aria-label="Paginación"
+        class="flex flex-wrap items-center justify-between gap-3"
+        x-on:click.capture="if ($event.target.closest('button')) $el.closest('section')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' })"
+    >
         <p class="text-sm text-adara-readable-muted">
             Mostrando <span class="font-semibold tabular-nums text-adara-ink">{{ $paginator->firstItem() }}–{{ $paginator->lastItem() }}</span> de <span class="font-semibold tabular-nums text-adara-ink">{{ $paginator->total() }}</span>
         </p>

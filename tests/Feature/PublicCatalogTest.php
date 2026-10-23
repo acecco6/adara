@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Livewire\PublicCatalog;
+use App\Livewire\PublicCatalogProductDetail;
 use App\Livewire\Settings\Index as SettingsIndex;
 use App\Models\Category;
 use App\Models\ProductGroup;
@@ -47,7 +48,9 @@ class PublicCatalogTest extends TestCase
         auth()->logout();
 
         $this->get(route('catalog.public'))->assertOk()->assertSee('Crema visible')->assertDontSee('Crema archivada')
-            ->assertSee('href="'.route('catalog.product.show', $visibleVariant).'"', false);
+            ->assertSee("Livewire.dispatch('public-product-detail-load', { variantId: {$visibleVariant->id} })", false)
+            ->assertSee('public-product-detail-reset', false)
+            ->assertDontSee('$wire.resetProduct()', false);
         $this->get(route('catalog.product.show', $visibleVariant))->assertOk()->assertSee('Crema visible')->assertSee('$ 14.500');
         $this->get(route('catalog.product.show', $archivedVariant))->assertNotFound();
         $this->get(route('catalog.images.show', $visibleImage))->assertOk()->assertHeader('Content-Type', 'image/png');
@@ -92,6 +95,37 @@ class PublicCatalogTest extends TestCase
         $this->assertSame(['Sérum premium', 'Sérum económico'], $catalog->viewData('products')->getCollection()->map(fn ($product) => $product->group->name)->all());
 
         $catalog->call('clearFilters')->assertSee('Aceite corporal')->assertSee('Crema facial');
+    }
+
+    public function test_guest_opens_product_detail_in_catalog_modal_without_losing_filters(): void
+    {
+        DB::table('business_settings')->where('id', 1)->update(['public_catalog_enabled' => true]);
+        $category = Category::factory()->create(['name' => 'Rostro']);
+        $group = ProductGroup::factory()->create([
+            'name' => 'Crema de noche',
+            'description' => 'Humecta y suaviza la piel.',
+            'category_id' => $category->id,
+        ]);
+        $variant = ProductVariant::factory()->for($group, 'group')->create([
+            'name' => 'Frasco 50 ml',
+            'current_price_cents' => 2250000,
+        ]);
+
+        Livewire::test(PublicCatalog::class)
+            ->set('selectedCategory', (string) $category->id)
+            ->assertSee('Crema de noche')
+            ->assertSee('variantId: '.$variant->id, false);
+
+        Livewire::test(PublicCatalogProductDetail::class)
+            ->dispatch('public-product-detail-load', variantId: $variant->id)
+            ->assertSet('variantId', $variant->id)
+            ->assertSee('Crema de noche')
+            ->assertSee('Frasco 50 ml')
+            ->assertSee('$ 22.500')
+            ->assertSee('Humecta y suaviza la piel.')
+            ->dispatch('public-product-detail-reset')
+            ->assertSet('variantId', null)
+            ->assertDontSee('Crema de noche');
     }
 
     public function test_guest_can_update_public_catalog_over_livewire_http_route(): void

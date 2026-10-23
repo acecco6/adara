@@ -7,6 +7,8 @@ use App\Livewire\Products\Detail;
 use App\Models\Category;
 use App\Models\ProductGroup;
 use App\Models\ProductVariant;
+use App\Models\PurchaseOrder;
+use App\Models\PurchaseOrderLine;
 use App\Services\StockAdjustmentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -57,6 +59,35 @@ class ProductCatalogTest extends TestCase
             ->set('status', 'archived')
             ->assertSee('Crema Facial')
             ->assertDontSee('Perfume Floral');
+    }
+
+    public function test_status_filter_shows_only_matching_presentations_for_mixed_products(): void
+    {
+        $group = ProductGroup::factory()->create(['name' => 'Crema Facial']);
+        ProductVariant::factory()->for($group, 'group')->create(['sku' => 'AD-CREMA-ACTIVA', 'is_active' => true]);
+        ProductVariant::factory()->for($group, 'group')->create(['sku' => 'AD-CREMA-ARCHIVADA', 'is_active' => false]);
+
+        Livewire::test(Catalog::class)
+            ->set('status', 'active')
+            ->assertSee('Crema Facial')
+            ->assertSee('AD-CREMA-ACTIVA')
+            ->assertDontSee('AD-CREMA-ARCHIVADA')
+            ->set('status', 'archived')
+            ->assertSee('Crema Facial')
+            ->assertSee('AD-CREMA-ARCHIVADA')
+            ->assertDontSee('AD-CREMA-ACTIVA');
+    }
+
+    public function test_product_pagination_renders_smooth_scroll_behavior_for_the_shared_paginator(): void
+    {
+        ProductGroup::factory()->count(13)->create()->each(function (ProductGroup $group): void {
+            ProductVariant::factory()->for($group, 'group')->create();
+        });
+
+        Livewire::test(Catalog::class)
+            ->assertSee('aria-label="Paginación"', false)
+            ->assertSee('scrollIntoView', false)
+            ->assertSee('prefers-reduced-motion', false);
     }
 
     public function test_category_filter_keeps_catalog_groups_and_summary_based_on_all_products(): void
@@ -164,6 +195,25 @@ class ProductCatalogTest extends TestCase
 
         $this->assertTrue($variant->fresh()->is_active);
         $this->assertDatabaseCount('stock_movements', 0);
+    }
+
+    public function test_detail_refuses_to_delete_variant_linked_to_a_draft_purchase_order(): void
+    {
+        $variant = ProductVariant::factory()->create();
+        $order = PurchaseOrder::factory()->create();
+        PurchaseOrderLine::factory()->for($order, 'order')->for($variant, 'variant')->create();
+
+        Livewire::test(Detail::class, ['groupId' => $variant->product_group_id])
+            ->call('confirm', 'delete_variant', $variant->id)
+            ->call('performConfirmed')
+            ->assertHasErrors('catalog')
+            ->assertSee('está vinculada a operaciones y no se puede eliminar');
+
+        $this->assertModelExists($variant);
+        $this->assertDatabaseHas('purchase_order_lines', [
+            'purchase_order_id' => $order->id,
+            'product_variant_id' => $variant->id,
+        ]);
     }
 
     public function test_edit_requires_sku_and_does_not_generate_a_replacement_silently(): void

@@ -88,8 +88,21 @@ class Catalog extends Component
 
     public function render(): View
     {
+        $activeStatus = match ($this->status) {
+            'active' => true,
+            'archived' => false,
+            default => null,
+        };
+
         $query = ProductGroup::query()
-            ->with(['category', 'subcategory', 'variants.balance', 'primaryImage' => fn ($images) => $images->select('id', 'product_group_id', 'mime_type')])
+            ->with([
+                'category',
+                'subcategory',
+                'variants' => fn ($variants) => $variants
+                    ->with('balance')
+                    ->when($activeStatus !== null, fn ($variants) => $variants->where('is_active', $activeStatus)),
+                'primaryImage' => fn ($images) => $images->select('id', 'product_group_id', 'mime_type'),
+            ])
             ->withCount('variants')
             ->orderByDesc('created_at')
             ->orderByDesc('id');
@@ -103,9 +116,8 @@ class Catalog extends Component
             });
         }
 
-        if ($this->status === 'active' || $this->status === 'archived') {
-            $active = $this->status === 'active';
-            $query->whereHas('variants', fn ($variants) => $variants->where('is_active', $active));
+        if ($activeStatus !== null) {
+            $query->whereHas('variants', fn ($variants) => $variants->where('is_active', $activeStatus));
         }
 
         if ($this->selectedCategory !== '') {

@@ -16,19 +16,6 @@ function enhanceSelect(root) {
     let typedAt = 0;
 
     function positionDropdown() {
-        if (root.hasAttribute('data-adara-select-inline')) {
-            dropdown.style.position = 'static';
-            dropdown.style.left = '';
-            dropdown.style.width = '';
-            dropdown.style.top = '';
-            dropdown.style.bottom = '';
-            dropdown.style.maxHeight = '';
-            dropdown.style.marginTop = '';
-            listbox.style.maxHeight = '';
-
-            return;
-        }
-
         const triggerBounds = trigger.getBoundingClientRect();
         const dialog = root.closest('dialog[open]');
         const dialogBounds = dialog?.getBoundingClientRect();
@@ -187,10 +174,8 @@ function enhanceSelect(root) {
         filterOptions();
         dropdown.classList.remove('hidden');
         positionDropdown();
-        if (!root.hasAttribute('data-adara-select-inline')) {
-            window.addEventListener('resize', positionDropdown);
-            document.addEventListener('scroll', positionDropdown, true);
-        }
+        window.addEventListener('resize', positionDropdown);
+        document.addEventListener('scroll', positionDropdown, true);
         trigger.setAttribute('aria-expanded', 'true');
         root.dataset.adaraOpen = 'true';
         openControl = { root, close };

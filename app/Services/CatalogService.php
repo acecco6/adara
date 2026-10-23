@@ -105,9 +105,15 @@ class CatalogService
     {
         DB::transaction(function () use ($variantId): void {
             $variant = ProductVariant::findOrFail($variantId);
+            $hasOperationalReferences = DB::table('stock_movements')->where('product_variant_id', $variantId)->exists()
+                || DB::table('purchase_order_lines')->where('product_variant_id', $variantId)->exists()
+                || DB::table('purchase_receipt_lines')->where('product_variant_id', $variantId)->exists()
+                || DB::table('sale_items')->where('product_variant_id', $variantId)->exists()
+                || DB::table('price_change_events')->where('product_variant_id', $variantId)->exists()
+                || DB::table('price_change_lines')->where('product_variant_id', $variantId)->exists();
 
-            if ($variant->balance()->value('quantity_on_hand') !== 0 || DB::table('stock_movements')->where('product_variant_id', $variantId)->exists()) {
-                throw new DomainException('La presentación tiene stock o historial y no se puede eliminar.');
+            if ($variant->balance()->value('quantity_on_hand') !== 0 || $hasOperationalReferences) {
+                throw new DomainException('La presentación tiene stock o está vinculada a operaciones y no se puede eliminar.');
             }
 
             $variant->delete();

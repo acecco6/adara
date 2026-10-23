@@ -1,3 +1,46 @@
+<style>
+    @media (prefers-reduced-motion: no-preference) {
+        .public-catalog-card {
+            transition: transform 280ms cubic-bezier(0.2, 0.75, 0.25, 1), border-color 280ms ease, box-shadow 280ms ease;
+        }
+
+        .public-catalog-card:focus-within {
+            transform: translateY(-5px);
+            border-color: color-mix(in srgb, var(--adara-primary) 32%, var(--adara-border));
+            box-shadow: 0 24px 56px rgb(84 51 57 / 14%);
+        }
+
+        .public-catalog-card__image,
+        .public-catalog-card__arrow {
+            transition: transform 500ms cubic-bezier(0.2, 0.75, 0.25, 1);
+        }
+
+        .public-catalog-card:focus-within .public-catalog-card__image {
+            transform: scale(1.04);
+        }
+
+        .public-catalog-card:focus-within .public-catalog-card__arrow {
+            transform: translateX(4px);
+        }
+    }
+
+    @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+        .public-catalog-card:hover {
+            transform: translateY(-5px);
+            border-color: color-mix(in srgb, var(--adara-primary) 32%, var(--adara-border));
+            box-shadow: 0 24px 56px rgb(84 51 57 / 14%);
+        }
+
+        .public-catalog-card:hover .public-catalog-card__image {
+            transform: scale(1.04);
+        }
+
+        .public-catalog-card:hover .public-catalog-card__arrow {
+            transform: translateX(4px);
+        }
+    }
+</style>
+
 <div class="min-h-dvh bg-[linear-gradient(135deg,#fffaf7_0%,#f7f0ed_58%,#fffaf7_100%)]">
     <header class="border-b border-adara-border/70 bg-adara-surface/95">
         <div class="mx-auto flex h-[72px] max-w-[1540px] items-center justify-between px-5 sm:px-8 lg:px-12">
@@ -31,14 +74,14 @@
                         <h2 class="font-display text-[28px] leading-tight text-[#201925]">Filtros</h2>
                     </div>
                     <div class="mt-5 space-y-6 border-t border-adara-border pt-5">
-                        <x-adara.select id="public-category" name="selectedCategory" label="Categoría" :inline-dropdown="true" wire:model.live="selectedCategory">
+                        <x-adara.select id="public-category" name="selectedCategory" label="Categoría" wire:model.live="selectedCategory">
                                 <option value="">Todas las categorías</option>
                                 @foreach ($categories as $category)
                                     <option value="{{ $category->id }}">{{ $category->name }}</option>
                                 @endforeach
                         </x-adara.select>
                         <div>
-                            <x-adara.select id="public-subcategory" name="selectedSubcategory" label="Subcategoría" :inline-dropdown="true" :disabled="$selectedCategory === ''" wire:model.live="selectedSubcategory">
+                            <x-adara.select id="public-subcategory" name="selectedSubcategory" label="Subcategoría" :disabled="$selectedCategory === ''" wire:model.live="selectedSubcategory">
                                 <option value="">Todas las subcategorías</option>
                                 @foreach ($subcategories as $subcategory)
                                     <option value="{{ $subcategory->id }}">{{ $subcategory->name }}</option>
@@ -79,13 +122,13 @@
                             </summary>
                             <div class="absolute left-0 z-20 mt-2 w-[min(354px,calc(100vw-40px))] space-y-4 rounded-adara-card border border-adara-border bg-adara-surface p-5 shadow-xl">
                                 <h3 class="font-display text-xl">Filtrar productos</h3>
-                                <x-adara.select id="public-category-mobile" name="selectedCategory" label="Categoría" :inline-dropdown="true" wire:model.live="selectedCategory">
+                                <x-adara.select id="public-category-mobile" name="selectedCategory" label="Categoría" wire:model.live="selectedCategory">
                                         <option value="">Todas las categorías</option>
                                         @foreach ($categories as $category)
                                             <option value="{{ $category->id }}">{{ $category->name }}</option>
                                         @endforeach
                                 </x-adara.select>
-                                <x-adara.select id="public-subcategory-mobile" name="selectedSubcategory" label="Subcategoría" :inline-dropdown="true" :disabled="$selectedCategory === ''" wire:model.live="selectedSubcategory">
+                                <x-adara.select id="public-subcategory-mobile" name="selectedSubcategory" label="Subcategoría" :disabled="$selectedCategory === ''" wire:model.live="selectedSubcategory">
                                         <option value="">Todas las subcategorías</option>
                                         @foreach ($subcategories as $subcategory)
                                             <option value="{{ $subcategory->id }}">{{ $subcategory->name }}</option>
@@ -108,13 +151,13 @@
                         <details wire:ignore.self class="relative">
                             <summary class="inline-flex min-h-11 cursor-pointer list-none items-center rounded-adara-control border border-adara-primary bg-adara-surface px-5 text-sm font-semibold text-adara-primary [&::-webkit-details-marker]:hidden">Filtros</summary>
                             <div class="absolute left-0 z-20 mt-2 w-[354px] space-y-4 rounded-adara-card border border-adara-border bg-adara-surface p-5 shadow-xl">
-                                <x-adara.select id="public-category-tablet" name="selectedCategory" label="Categoría" :inline-dropdown="true" wire:model.live="selectedCategory">
+                                <x-adara.select id="public-category-tablet" name="selectedCategory" label="Categoría" wire:model.live="selectedCategory">
                                         <option value="">Todas las categorías</option>
                                         @foreach ($categories as $category)
                                             <option value="{{ $category->id }}">{{ $category->name }}</option>
                                         @endforeach
                                 </x-adara.select>
-                                <x-adara.select id="public-subcategory-tablet" name="selectedSubcategory" label="Subcategoría" :inline-dropdown="true" :disabled="$selectedCategory === ''" wire:model.live="selectedSubcategory">
+                                <x-adara.select id="public-subcategory-tablet" name="selectedSubcategory" label="Subcategoría" :disabled="$selectedCategory === ''" wire:model.live="selectedSubcategory">
                                         <option value="">Todas las subcategorías</option>
                                         @foreach ($subcategories as $subcategory)
                                             <option value="{{ $subcategory->id }}">{{ $subcategory->name }}</option>
@@ -135,15 +178,15 @@
                     @else
                         <div class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3" role="list">
                             @foreach ($products as $product)
-                                <article wire:key="public-product-{{ $product->id }}" role="listitem" class="flex min-w-0 flex-col overflow-hidden rounded-[18px] border border-adara-border/80 bg-adara-surface shadow-[0_16px_40px_rgb(84_51_57/8%)]">
+                                <article wire:key="public-product-{{ $product->id }}" role="listitem" class="group public-catalog-card flex min-w-0 flex-col overflow-hidden rounded-[18px] border border-adara-border/80 bg-adara-surface shadow-[0_16px_40px_rgb(84_51_57/8%)]">
                                     <div class="p-4 pb-0">
                                         @if ($product->group->primaryImage)
                                             <div class="flex h-[190px] items-center justify-center overflow-hidden rounded-[9px] bg-white sm:h-[205px]">
-                                                <img src="{{ route('catalog.images.show', $product->group->primaryImage) }}" alt="" class="h-full w-full object-contain" loading="lazy">
+                                                <img src="{{ route('catalog.images.show', $product->group->primaryImage) }}" alt="" class="public-catalog-card__image h-full w-full object-contain" loading="lazy">
                                             </div>
                                         @else
                                             <div class="flex h-[190px] flex-col items-center justify-center gap-2 rounded-[9px] bg-gradient-to-br from-[#f9eeee] to-[#f4e5e7] text-[#a66178] sm:h-[205px]">
-                                                <svg class="h-16 w-20" viewBox="0 0 80 64" fill="none" stroke="currentColor" stroke-width="1.15" aria-hidden="true"><path d="M23 20c0-4 34-4 34 0v4H23zM20 24h40v27c0 3-3 5-6 5H26c-3 0-6-2-6-5zM18 19c0-6 44-6 44 0"/><path d="M64 16c8-4 10-10 9-13-8 1-12 6-9 13ZM66 17c-1-5-5-8-9-9 0 5 3 9 9 9Z"/></svg>
+                                                <svg class="public-catalog-card__image h-16 w-20" viewBox="0 0 80 64" fill="none" stroke="currentColor" stroke-width="1.15" aria-hidden="true"><path d="M23 20c0-4 34-4 34 0v4H23zM20 24h40v27c0 3-3 5-6 5H26c-3 0-6-2-6-5zM18 19c0-6 44-6 44 0"/><path d="M64 16c8-4 10-10 9-13-8 1-12 6-9 13ZM66 17c-1-5-5-8-9-9 0 5 3 9 9 9Z"/></svg>
                                                 <span class="text-sm">Imagen no disponible</span>
                                             </div>
                                         @endif
@@ -158,7 +201,7 @@
                                         </p>
                                         <div class="mt-auto pt-4">
                                             <div class="border-t border-adara-border pt-4">
-                                                <a href="{{ route('catalog.product.show', $product) }}" class="inline-flex min-h-8 items-center gap-2 text-sm font-semibold text-adara-primary hover:underline">Ver detalle <span aria-hidden="true" class="text-xl leading-none">→</span></a>
+                                                <button type="button" x-on:click="window.dispatchEvent(new CustomEvent('adara:open', { detail: { id: 'public-product-detail' } })); Livewire.dispatch('public-product-detail-load', { variantId: {{ $product->id }} })" aria-label="Ver detalle de {{ $product->group->name }}" class="inline-flex min-h-8 items-center gap-2 text-sm font-semibold text-adara-primary hover:underline">Ver detalle <span aria-hidden="true" class="public-catalog-card__arrow text-xl leading-none">→</span></button>
                                             </div>
                                         </div>
                                     </div>
@@ -172,5 +215,54 @@
                 </section>
             </div>
         </div>
+
+        <livewire:public-catalog-product-detail />
+        {{-- modal moved to isolated detail component --}}
+        {{--
+        <x-adara.modal id="public-product-detail" title="Detalle del producto" wide bare wire:ignore.self class="!max-w-[1016px]">
+            @if ($selectedProduct)
+                <article class="relative grid sm:grid-cols-[48%_52%]">
+                    <button x-ref="initial" type="button" x-on:click="close()" aria-label="Cerrar detalle" class="absolute top-5 right-5 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-adara-primary bg-adara-surface/90 text-adara-primary transition-colors hover:bg-adara-primary-light">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 5 19 19M19 5 5 19"/></svg>
+                    </button>
+                    <div class="relative m-4 flex min-h-[250px] items-center justify-center overflow-hidden rounded-[13px] bg-[#f4dfdc] sm:mr-0 sm:min-h-[560px]">
+                        <div class="absolute inset-0 bg-cover bg-[position:72%_center] opacity-70" style="background-image: url('{{ asset('images/catalog-hero-botanical.png') }}')" aria-hidden="true"></div>
+                        @if ($selectedProduct->group->primaryImage)
+                            <img src="{{ route('catalog.images.show', $selectedProduct->group->primaryImage) }}" alt="{{ $selectedProduct->group->name }}" class="relative z-10 h-[230px] w-[85%] object-contain mix-blend-multiply sm:h-[410px]">
+                        @else
+                            <div class="relative z-10 flex flex-col items-center gap-3 rounded-adara-control bg-adara-surface/80 px-8 py-7 text-[#a66178]">
+                                <svg class="h-20 w-24" viewBox="0 0 80 64" fill="none" stroke="currentColor" stroke-width="1.15" aria-hidden="true"><path d="M23 20c0-4 34-4 34 0v4H23zM20 24h40v27c0 3-3 5-6 5H26c-3 0-6-2-6-5zM18 19c0-6 44-6 44 0"/><path d="M64 16c8-4 10-10 9-13-8 1-12 6-9 13ZM66 17c-1-5-5-8-9-9 0 5 3 9 9 9Z"/></svg>
+                                <span class="text-sm">Imagen no disponible</span>
+                            </div>
+                        @endif
+                    </div>
+                    <div class="flex min-w-0 flex-col px-6 pt-6 pb-6 sm:pr-8 sm:pl-9 sm:pt-15">
+                        <p class="text-[11px] font-bold tracking-[0.32em] text-adara-primary uppercase">{{ $selectedProduct->group->category?->name ?? 'Cosmética' }}</p>
+                        <h2 id="public-product-detail-title" class="mt-3 font-display text-[31px] leading-tight text-[#201925] sm:text-[38px]">{{ $selectedProduct->group->name }}</h2>
+                        <p class="mt-1 text-base text-adara-readable-muted">{{ $selectedProduct->name }}</p>
+                        <div class="mt-5 border-t border-adara-border pt-4">
+                            <p class="text-sm font-semibold text-adara-primary">Precio</p>
+                            <p class="mt-1 font-display text-[26px] leading-tight tabular-nums text-adara-primary sm:text-[30px]">{{ $selectedProduct->current_price_cents === null ? 'Precio pendiente' : '$ '.number_format(intdiv($selectedProduct->current_price_cents, 100), 0, ',', '.') }}</p>
+                        </div>
+                        <div class="mt-5 grid grid-cols-2 border-t border-adara-border pt-4">
+                            <div class="min-w-0 pr-4">
+                                <p class="text-sm font-semibold">Categoría</p>
+                                <p class="mt-2 text-sm text-adara-readable-muted">{{ $selectedProduct->group->category?->name ?? 'Cosmética' }}</p>
+                            </div>
+                            <div class="min-w-0 border-l border-adara-border pl-4">
+                                <p class="text-sm font-semibold">Presentación</p>
+                                <p class="mt-2 text-sm text-adara-readable-muted">{{ $selectedProduct->name }}</p>
+                            </div>
+                        </div>
+                        <div class="mt-5 border-t border-adara-border pt-4">
+                            <h3 class="text-sm font-semibold">Descripción</h3>
+                            <p class="mt-2 whitespace-pre-line text-sm leading-6 text-adara-readable-muted {{ $selectedProduct->group->description ? '' : 'italic' }}">{{ $selectedProduct->group->description ?: 'No hay una descripción disponible para este producto.' }}</p>
+                        </div>
+                        <button type="button" x-on:click="close()" class="mt-8 min-h-11 self-end rounded-adara-control border border-adara-primary px-8 text-sm font-semibold text-adara-primary hover:bg-adara-primary-light sm:mt-auto">Cerrar</button>
+                    </div>
+                </article>
+            @endif
+        </x-adara.modal>
+        --}}
     </main>
 </div>
